@@ -146,10 +146,11 @@ public static class DataSeeder
             await context.SaveChangesAsync();
         }
 
-        // Ensure receptionist user exists
-        if (!context.Staff.Any(s => s.UserName == "resepsiyon1"))
+        // Ensure receptionist user exists and has correct password
+        var receptionUser = context.Staff.FirstOrDefault(s => s.UserName == "resepsiyon1");
+        if (receptionUser == null)
         {
-            var receptionUser = new Staff
+            receptionUser = new Staff
             {
                 Id = Guid.NewGuid(),
                 UserName = "resepsiyon1",
@@ -164,8 +165,15 @@ public static class DataSeeder
                 IsActive = true
             };
             context.Staff.Add(receptionUser);
-            await context.SaveChangesAsync();
         }
+        else
+        {
+            // Force update password to ensure login works
+            receptionUser.PasswordHash = BCrypt.Net.BCrypt.HashPassword("resepsiyon123");
+            receptionUser.IsActive = true;
+            context.Staff.Update(receptionUser);
+        }
+        await context.SaveChangesAsync();
 
         // Ensure housekeeping user exists
         if (!context.Staff.Any(s => s.UserName == "temizlik1"))

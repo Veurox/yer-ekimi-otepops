@@ -123,6 +123,8 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapGet("/", () => "HotelManagement API is running!");
 
+app.MapGet("/debug/users", (ApplicationDbContext db) => db.Staff.Select(s => new { s.UserName, s.Role }).ToList());
+
 // Initialize Database
 using (var scope = app.Services.CreateScope())
 {
