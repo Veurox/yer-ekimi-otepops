@@ -9,16 +9,32 @@ namespace HotelManagement.Business.Services;
 public class RoomService : IRoomService
 {
     private readonly IGenericRepository<Room> _repository;
+    private readonly ICacheService _cacheService;
+    private const string CacheKey = "all_rooms";
 
-    public RoomService(IGenericRepository<Room> repository)
+    public RoomService(IGenericRepository<Room> repository, ICacheService cacheService)
     {
         _repository = repository;
+        _cacheService = cacheService;
     }
 
     public async Task<IEnumerable<RoomDto>> GetAllRoomsAsync()
     {
+        // 1. Check Cache
+        var cachedRooms = await _cacheService.GetAsync<List<RoomDto>>(CacheKey);
+        if (cachedRooms != null)
+        {
+            return cachedRooms;
+        }
+
+        // 2. Fetch from DB
         var rooms = await _repository.GetAllAsync();
-        return rooms.Select(MapToDto);
+        var dtos = rooms.Select(MapToDto).ToList();
+
+        // 3. Set Cache
+        await _cacheService.SetAsync(CacheKey, dtos, TimeSpan.FromMinutes(30));
+
+        return dtos;
     }
 
     public async Task<RoomDto?> GetRoomByIdAsync(Guid id)
@@ -50,6 +66,7 @@ public class RoomService : IRoomService
 
         await _repository.AddAsync(room);
         await _repository.SaveChangesAsync();
+        await _cacheService.RemoveAsync(CacheKey);
 
         return MapToDto(room);
     }
@@ -81,6 +98,7 @@ public class RoomService : IRoomService
 
         await _repository.UpdateAsync(room);
         await _repository.SaveChangesAsync();
+        await _cacheService.RemoveAsync(CacheKey);
     }
 
     public async Task DeleteRoomAsync(Guid id)
@@ -90,6 +108,7 @@ public class RoomService : IRoomService
 
         await _repository.DeleteAsync(room); // GenericRepository now takes Entity
         await _repository.SaveChangesAsync();
+        await _cacheService.RemoveAsync(CacheKey);
     }
 
     public async Task CompleteCleaningAsync(Guid roomId)
@@ -109,6 +128,7 @@ public class RoomService : IRoomService
         room.Status = RoomStatus.Available;
         await _repository.UpdateAsync(room);
         await _repository.SaveChangesAsync();
+        await _cacheService.RemoveAsync(CacheKey);
     }
 
     // Manual Mapping Helper

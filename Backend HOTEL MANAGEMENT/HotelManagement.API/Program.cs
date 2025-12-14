@@ -20,6 +20,16 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Generic Repository
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
+// Redis Cache
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = builder.Configuration.GetConnectionString("Redis");
+    options.InstanceName = "OtelProject_";
+});
+
+// Cache Service
+builder.Services.AddScoped<ICacheService, HotelManagement.Infrastructure.Services.RedisCacheService>();
+
 // Services
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
