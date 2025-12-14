@@ -9,3 +9,4 @@ C:\Users\bayra\OneDrive\Desktop\yerçekimi otepops\Backend HOTEL MANAGEMENT\Hote
 C:\Users\bayra\OneDrive\Desktop\yerçekimi otepops\Backend HOTEL MANAGEMENT\HotelManagement.Core\obj\Debug\net9.0\refint\HotelManagement.Core.dll
 C:\Users\bayra\OneDrive\Desktop\yerçekimi otepops\Backend HOTEL MANAGEMENT\HotelManagement.Core\obj\Debug\net9.0\HotelManagement.Core.pdb
 C:\Users\bayra\OneDrive\Desktop\yerçekimi otepops\Backend HOTEL MANAGEMENT\HotelManagement.Core\obj\Debug\net9.0\ref\HotelManagement.Core.dll
+C:\Users\bayra\OneDrive\Desktop\yerçekimi otepops\Backend HOTEL MANAGEMENT\HotelManagement.Core\obj\Debug\net9.0\HotelManagement.Core.sourcelink.json

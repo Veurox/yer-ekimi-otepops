@@ -74,7 +74,7 @@ public class RoomServiceOrderService : IRoomServiceOrderService
         var order = await _orderRepository.GetByIdAsync(dto.Id);
         if (order == null) throw new KeyNotFoundException($"Order {dto.Id} not found");
 
-        if (Enum.TryParse<OrderStatus>(dto.Status, out var status))
+        if (Enum.TryParse<OrderStatus>(dto.Status, true, out var status))
         {
             order.Status = status;
         }

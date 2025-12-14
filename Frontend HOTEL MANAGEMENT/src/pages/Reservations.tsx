@@ -17,6 +17,15 @@ const reservationSchema = Yup.object({
   totalAmount: Yup.number().min(0),
   paidAmount: Yup.number().min(0),
   specialRequests: Yup.string(),
+  additionalGuests: Yup.array().of(
+    Yup.object().shape({
+      name: Yup.string().required(),
+      idNumber: Yup.string(),
+      phone: Yup.string(),
+      email: Yup.string(),
+      address: Yup.string()
+    })
+  )
 });
 
 const ReservationsPage: React.FC = () => {
@@ -30,6 +39,10 @@ const ReservationsPage: React.FC = () => {
   const [filter, setFilter] = useState<'all' | 'pending' | 'confirmed' | 'checked-in' | 'checked-out'>('all');
 
   const [searchTerm, setSearchTerm] = useState('');
+
+  // State for additional guest adding
+  const [isAddingGuest, setIsAddingGuest] = useState(false);
+  const [additionalGuestSearch, setAdditionalGuestSearch] = useState('');
 
   const formik = useFormik({
     initialValues: {
@@ -47,6 +60,7 @@ const ReservationsPage: React.FC = () => {
       primaryGuestPhone: '',
       primaryGuestIdNumber: '',
       primaryGuestAddress: '',
+      additionalGuests: [] as { name: string; idNumber: string; phone: string; email: string; address: string }[]
     },
     validationSchema: reservationSchema,
     onSubmit: async (values) => {
@@ -60,12 +74,18 @@ const ReservationsPage: React.FC = () => {
         total = room.price * nights;
       }
 
+      // Calculate total guests count (Primary + Additional)
+      // Check if manual numberOfGuests is less than actual people count
+      const peopleCount = 1 + values.additionalGuests.length;
+      const finalNumberOfGuests = Math.max(values.numberOfGuests, peopleCount);
+
       if (editingReservation) {
         // Update logic (simplified for now, mostly status/room/dates)
         await updateReservation(editingReservation.id, {
           roomId: values.roomId,
           checkInDate: values.checkInDate,
           checkOutDate: values.checkOutDate,
+          numberOfGuests: finalNumberOfGuests,
           specialRequests: values.specialRequests,
           paidAmount: values.paidAmount,
           totalAmount: values.totalAmount,
@@ -77,7 +97,7 @@ const ReservationsPage: React.FC = () => {
           roomId: values.roomId,
           checkInDate: values.checkInDate,
           checkOutDate: values.checkOutDate,
-          numberOfGuests: values.numberOfGuests,
+          numberOfGuests: finalNumberOfGuests,
           specialRequests: values.specialRequests,
           totalAmount: total,
           paidAmount: values.paidAmount,
@@ -87,7 +107,7 @@ const ReservationsPage: React.FC = () => {
           primaryGuestPhone: values.primaryGuestPhone,
           primaryGuestIdNumber: values.primaryGuestIdNumber,
           primaryGuestAddress: values.primaryGuestAddress,
-          additionalGuests: [] // TODO: Add UI for additional guests
+          additionalGuests: values.additionalGuests
         };
         await addReservation(payload);
       }
@@ -102,6 +122,15 @@ const ReservationsPage: React.FC = () => {
     setEditingReservation(reservation);
     // Find primary guest details
     const guest = guests.find(g => g.id === reservation.guestId);
+
+    // Find additional guests (guests in reservation list but not the primary one)
+    const otherGuests = reservation.guests?.filter(g => g.id !== reservation.guestId).map(g => ({
+      name: g.name,
+      idNumber: g.idNumber,
+      phone: g.phone,
+      email: g.email,
+      address: g.address
+    })) || [];
 
     formik.setValues({
       ...formik.initialValues,
@@ -120,6 +149,7 @@ const ReservationsPage: React.FC = () => {
       primaryGuestPhone: guest?.phone || '',
       primaryGuestEmail: guest?.email || '',
       primaryGuestAddress: guest?.address || '',
+      additionalGuests: otherGuests
     });
 
     if (guest) {
@@ -227,7 +257,19 @@ const ReservationsPage: React.FC = () => {
                   <tr key={reservation.id}>
                     <td>
                       <strong>{guestName}</strong>
-                      <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+
+                      {/* Additional Guests List */}
+                      {reservation.guests && reservation.guests.filter(g => !g.isPrimaryGuest).length > 0 && (
+                        <div style={{ fontSize: '0.8rem', color: '#4b5563', marginTop: '0.25rem' }}>
+                          <ul style={{ margin: 0, paddingLeft: '1.2rem', listStyleType: 'disc' }}>
+                            {reservation.guests.filter(g => !g.isPrimaryGuest).map(g => (
+                              <li key={g.id}>{g.name}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '0.25rem' }}>
                         {reservation.guests?.find(g => g.isPrimaryGuest)?.phone}
                       </div>
                     </td>
@@ -327,95 +369,289 @@ const ReservationsPage: React.FC = () => {
                     <h4>Misafir Seçimi</h4>
 
                     <div className="form-group" style={{ marginBottom: '1rem', position: 'relative' }}>
-                      <label className="form-label">Misafir Ara (İsim, TCKN veya Telefon)</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        placeholder="Mevcut misafir aramak için yazınız..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        autoComplete="off"
-                      />
+                      <label className="form-label">Misafir</label>
 
-                      {searchTerm.length > 0 && (
+                      {/* Selected Guest View */}
+                      {formik.values.primaryGuestName ? (
                         <div style={{
-                          position: 'absolute',
-                          top: '100%',
-                          left: 0,
-                          right: 0,
-                          zIndex: 50,
-                          backgroundColor: 'white',
-                          border: '1px solid #e5e7eb',
-                          borderRadius: '0.375rem',
-                          maxHeight: '200px',
-                          overflowY: 'auto',
-                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          padding: '0.75rem',
+                          backgroundColor: '#f0fdf4',
+                          border: '1px solid #bbf7d0',
+                          borderRadius: '0.375rem'
                         }}>
-                          {guests
-                            .filter(g => {
-                              // 1. Active Reservation Check
-                              const activeStatuses = ['pending', 'confirmed', 'checked-in'];
-                              const hasActiveRes = reservations.some(r => {
-                                if (!r.guestId || !g.id) return false;
-                                const isSameGuest = String(r.guestId).toLowerCase() === String(g.id).toLowerCase();
-                                const status = String(r.status).toLowerCase();
-                                return isSameGuest && activeStatuses.includes(status);
-                              });
-                              if (hasActiveRes) return false;
-
-                              // 2. Search Term Check
-                              const term = searchTerm.toLowerCase();
-                              return (
-                                g.name.toLowerCase().includes(term) ||
-                                g.idNumber.includes(term) ||
-                                g.phone.includes(term)
-                              );
-                            })
-                            .map(guest => (
-                              <div
-                                key={guest.id}
-                                style={{ padding: '0.75rem', cursor: 'pointer', borderBottom: '1px solid #f3f4f6' }}
-                                onClick={() => {
-                                  // Populate Form
-                                  formik.setFieldValue('primaryGuestName', guest.name);
-                                  formik.setFieldValue('primaryGuestIdNumber', guest.idNumber);
-                                  formik.setFieldValue('primaryGuestPhone', guest.phone);
-                                  formik.setFieldValue('primaryGuestEmail', guest.email);
-                                  formik.setFieldValue('primaryGuestAddress', guest.address);
-
-                                  // Set search term to name to show selection and close irrelevant results
-                                  setSearchTerm(guest.name);
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
-                              >
-                                <div style={{ fontWeight: 500 }}>{guest.name}</div>
-                                <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-                                  {guest.idNumber} • {guest.phone}
-                                </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div style={{
+                              backgroundColor: '#166534',
+                              color: 'white',
+                              width: '32px',
+                              height: '32px',
+                              borderRadius: '50%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}>
+                              <CheckCircle size={18} />
+                            </div>
+                            <div>
+                              <div style={{ fontWeight: 600, color: '#166534' }}>{formik.values.primaryGuestName}</div>
+                              <div style={{ fontSize: '0.8rem', color: '#15803d' }}>
+                                {formik.values.primaryGuestIdNumber ? `TCKN: ${formik.values.primaryGuestIdNumber}` : ''}
+                                {formik.values.primaryGuestPhone ? ` • Tel: ${formik.values.primaryGuestPhone}` : ''}
                               </div>
-                            ))}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              formik.setFieldValue('primaryGuestName', '');
+                              formik.setFieldValue('primaryGuestIdNumber', '');
+                              formik.setFieldValue('primaryGuestPhone', '');
+                              formik.setFieldValue('primaryGuestEmail', '');
+                              formik.setFieldValue('primaryGuestAddress', '');
+                              setSearchTerm('');
+                            }}
+                            className="btn btn-secondary"
+                            style={{ padding: '0.25rem 0.75rem', fontSize: '0.9rem' }}
+                          >
+                            Değiştir
+                          </button>
                         </div>
+                      ) : (
+                        /* Search Input View */
+                        <>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="İsim, TCKN veya Telefon ile misafir arayın..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            autoComplete="off"
+                          />
+
+                          {searchTerm.length > 0 && (
+                            <div style={{
+                              position: 'absolute',
+                              top: '100%',
+                              left: 0,
+                              right: 0,
+                              zIndex: 50,
+                              backgroundColor: 'white',
+                              border: '1px solid #e5e7eb',
+                              borderRadius: '0.375rem',
+                              maxHeight: '200px',
+                              overflowY: 'auto',
+                              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                              marginTop: '0.25rem'
+                            }}>
+                              {guests
+                                .filter(g => {
+                                  // Active Reservation Check
+                                  const activeStatuses = ['pending', 'confirmed', 'checked-in'];
+                                  const hasActiveRes = reservations.some(r => {
+                                    if (!r.guestId || !g.id) return false;
+                                    const isSameGuest = String(r.guestId).toLowerCase() === String(g.id).toLowerCase();
+                                    const status = String(r.status).toLowerCase();
+                                    return isSameGuest && activeStatuses.includes(status);
+                                  });
+                                  if (hasActiveRes) return false;
+
+                                  // Search Term Check
+                                  const term = searchTerm.toLowerCase();
+                                  return (
+                                    g.name.toLowerCase().includes(term) ||
+                                    g.idNumber.includes(term) ||
+                                    g.phone.includes(term)
+                                  );
+                                })
+                                .map(guest => (
+                                  <div
+                                    key={guest.id}
+                                    style={{ padding: '0.75rem', cursor: 'pointer', borderBottom: '1px solid #f3f4f6' }}
+                                    onClick={() => {
+                                      formik.setFieldValue('primaryGuestName', guest.name);
+                                      formik.setFieldValue('primaryGuestIdNumber', guest.idNumber);
+                                      formik.setFieldValue('primaryGuestPhone', guest.phone);
+                                      formik.setFieldValue('primaryGuestEmail', guest.email);
+                                      formik.setFieldValue('primaryGuestAddress', guest.address);
+                                      setSearchTerm(''); // Clear search term to close dropdown effectively (though view switches anyway)
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                                  >
+                                    <div style={{ fontWeight: 500 }}>{guest.name}</div>
+                                    <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                                      {guest.idNumber} • {guest.phone}
+                                    </div>
+                                  </div>
+                                ))}
+                              {guests.filter(g => g.name.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 && (
+                                <div style={{ padding: '0.75rem', color: '#6b7280', textAlign: 'center' }}>
+                                  Sonuç bulunamadı.
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          <small style={{ color: '#6b7280', display: 'block', marginTop: '0.25rem' }}>
+                            * Rezervasyon oluşturmak için listeden bir misafir seçmelisiniz.
+                          </small>
+                        </>
                       )}
 
-                      <small style={{ color: '#6b7280' }}>
-                        * Rezervasyon oluşturmak için listeden bir misafir seçmelisiniz.
-                      </small>
                       {formik.submitCount > 0 && !formik.values.primaryGuestName && (
                         <div className="form-error" style={{ marginTop: '0.5rem' }}>
                           Lütfen bir misafir seçiniz.
                         </div>
                       )}
                     </div>
+                  </div>
 
-                    {formik.values.primaryGuestName && (
-                      <div className="card" style={{ padding: '1rem', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb' }}>
-                        <h5 style={{ marginTop: 0, marginBottom: '0.5rem' }}>Seçilen Misafir Bilgileri</h5>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.9rem' }}>
-                          <div><strong>Ad Soyad:</strong> {formik.values.primaryGuestName}</div>
-                          <div><strong>TCKN:</strong> {formik.values.primaryGuestIdNumber}</div>
-                          <div><strong>Telefon:</strong> {formik.values.primaryGuestPhone}</div>
-                          <div><strong>E-Posta:</strong> {formik.values.primaryGuestEmail}</div>
+                  {/* Additional Guests Section */}
+                  <div style={{ marginBottom: '1.5rem', borderTop: '1px solid #e5e7eb', paddingTop: '1rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                      <h4 style={{ margin: 0 }}>Diğer Misafirler</h4>
+                      <span style={{ fontSize: '0.85rem', color: '#6b7280' }}>
+                        {1 + formik.values.additionalGuests.length} / {rooms.find(r => r.id === formik.values.roomId)?.capacity || '?'} Kişi
+                      </span>
+                    </div>
+
+                    {/* List of Additional Guests */}
+                    {formik.values.additionalGuests.length > 0 && (
+                      <div style={{ display: 'grid', gap: '0.5rem', marginBottom: '1rem' }}>
+                        {formik.values.additionalGuests.map((guest, index) => (
+                          <div key={index} style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '0.5rem 0.75rem',
+                            backgroundColor: '#f9fafb',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '0.375rem'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: '#d1d5db', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 600 }}>
+                                {index + 2}
+                              </div>
+                              <div>
+                                <div style={{ fontWeight: 500, fontSize: '0.9rem' }}>{guest.name}</div>
+                                <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{guest.idNumber}</div>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newGuests = [...formik.values.additionalGuests];
+                                newGuests.splice(index, 1);
+                                formik.setFieldValue('additionalGuests', newGuests);
+                              }}
+                              className="btn btn-danger"
+                              style={{ padding: '0.25rem', height: '28px', width: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                              title="Kaldır"
+                            >
+                              <XCircle size={16} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Add Guest Control */}
+                    {!isAddingGuest ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const room = rooms.find(r => r.id === formik.values.roomId);
+                          if (!room) {
+                            alert('Lütfen önce bir oda seçiniz.');
+                            return;
+                          }
+                          const max = room.capacity;
+                          const current = 1 + formik.values.additionalGuests.length;
+                          if (current >= max) {
+                            alert(`Bu oda en fazla ${max} kişiliktir.`);
+                            return;
+                          }
+                          setIsAddingGuest(true);
+                        }}
+                        className="btn btn-secondary"
+                        style={{ width: '100%', borderStyle: 'dashed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                      >
+                        <Plus size={16} /> Misafir Ekle
+                      </button>
+                    ) : (
+                      <div className="card" style={{ padding: '0.75rem', border: '1px solid #3b82f6' }}>
+                        <div style={{ position: 'relative' }}>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="Misafir ara..."
+                            value={additionalGuestSearch}
+                            onChange={(e) => setAdditionalGuestSearch(e.target.value)}
+                            autoFocus
+                          />
+                          {additionalGuestSearch.length > 0 && (
+                            <div style={{
+                              position: 'absolute',
+                              top: '100%',
+                              left: 0,
+                              right: 0,
+                              zIndex: 60,
+                              backgroundColor: 'white',
+                              border: '1px solid #e5e7eb',
+                              borderRadius: '0.375rem',
+                              maxHeight: '150px',
+                              overflowY: 'auto',
+                              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                            }}>
+                              {guests
+                                .filter(g => {
+                                  // Should not specific same guest twice
+                                  if (g.name === formik.values.primaryGuestName) return false;
+                                  const alreadyAdded = formik.values.additionalGuests.some(ag => ag.name === g.name);
+                                  if (alreadyAdded) return false;
+
+                                  const term = additionalGuestSearch.toLowerCase();
+                                  return (
+                                    g.name.toLowerCase().includes(term) ||
+                                    g.idNumber.includes(term)
+                                  );
+                                })
+                                .map(g => (
+                                  <div
+                                    key={g.id}
+                                    style={{ padding: '0.5rem', cursor: 'pointer', borderBottom: '1px solid #f3f4f6' }}
+                                    onClick={() => {
+                                      const newGuest = {
+                                        name: g.name,
+                                        idNumber: g.idNumber,
+                                        phone: g.phone,
+                                        email: g.email,
+                                        address: g.address
+                                      };
+                                      formik.setFieldValue('additionalGuests', [...formik.values.additionalGuests, newGuest]);
+                                      setAdditionalGuestSearch('');
+                                      setIsAddingGuest(false);
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                                  >
+                                    <div style={{ fontWeight: 500, fontSize: '0.9rem' }}>{g.name}</div>
+                                    <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{g.idNumber}</div>
+                                  </div>
+                                ))}
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ marginTop: '0.5rem', textAlign: 'right' }}>
+                          <button
+                            type="button"
+                            onClick={() => { setIsAddingGuest(false); setAdditionalGuestSearch(''); }}
+                            style={{ fontSize: '0.85rem', color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer' }}
+                          >
+                            İptal
+                          </button>
                         </div>
                       </div>
                     )}

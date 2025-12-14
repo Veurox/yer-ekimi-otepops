@@ -54,8 +54,14 @@ public class InventoryService : IInventoryService
         var item = await _repository.GetByIdAsync(dto.Id);
         if (item == null) throw new KeyNotFoundException($"InventoryItem {dto.Id} not found");
 
+        item.Name = dto.Name;
+        // item.Category conversion if needed, but usually category update might be tricky with enum string. 
+        // For now trusting Name/Supplier/etc.
         item.Quantity = dto.Quantity;
+        item.Unit = dto.Unit;
+        item.MinQuantity = dto.MinQuantity;
         item.PricePerUnit = dto.PricePerUnit;
+        item.Supplier = dto.Supplier;
         // More fields...
 
         await _repository.UpdateAsync(item);
@@ -80,7 +86,9 @@ public class InventoryService : IInventoryService
             Category = i.Category.ToString().ToLower(),
             Quantity = i.Quantity,
             Unit = i.Unit,
-            PricePerUnit = i.PricePerUnit
+            MinQuantity = i.MinQuantity,
+            PricePerUnit = i.PricePerUnit,
+            Supplier = i.Supplier
         };
     }
 }

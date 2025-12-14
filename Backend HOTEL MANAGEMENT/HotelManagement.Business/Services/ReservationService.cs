@@ -28,22 +28,43 @@ public class ReservationService : IReservationService
         var dtos = reservations.Select(MapToDto).ToList();
 
         // Enrich with Guest Data (Manual Join)
+        // Note: For better performance with large data, this should be done via Include() in repository
         var allGuests = await _guestRepository.GetAllAsync();
+        
         foreach (var dto in dtos)
         {
-            var primaryGuest = allGuests.FirstOrDefault(g => g.Id == dto.GuestId);
-            if (primaryGuest != null)
+            var reservationGuests = allGuests.Where(g => g.ReservationId == dto.Id);
+            foreach (var guest in reservationGuests)
             {
-                dto.Guests.Add(new GuestDto
+                 dto.Guests.Add(new GuestDto
                 {
-                    Id = primaryGuest.Id,
-                    Name = primaryGuest.Name,
-                    Email = primaryGuest.Email,
-                    Phone = primaryGuest.Phone,
-                    IdNumber = primaryGuest.IdNumber,
-                    Address = primaryGuest.Address,
-                    IsPrimaryGuest = true
+                    Id = guest.Id,
+                    Name = guest.Name,
+                    Email = guest.Email,
+                    Phone = guest.Phone,
+                    IdNumber = guest.IdNumber,
+                    Address = guest.Address,
+                    IsPrimaryGuest = guest.Id == dto.GuestId // Check against Primary Guest ID stored in Reservation
                 });
+            }
+            
+            // Fallback: If no guests found by ReservationId (legacy data), at least add the primary guest
+            if (!dto.Guests.Any())
+            {
+                var primary = allGuests.FirstOrDefault(g => g.Id == dto.GuestId);
+                if (primary != null)
+                {
+                    dto.Guests.Add(new GuestDto
+                    {
+                        Id = primary.Id,
+                        Name = primary.Name,
+                        Email = primary.Email,
+                        Phone = primary.Phone,
+                        IdNumber = primary.IdNumber,
+                        Address = primary.Address,
+                        IsPrimaryGuest = true
+                    });
+                }
             }
         }
         return dtos;
@@ -57,25 +78,54 @@ public class ReservationService : IReservationService
         var dto = MapToDto(reservation);
         
         // Enrich
-        var guest = await _guestRepository.GetByIdAsync(reservation.GuestId);
-        if (guest != null)
+        var allGuests = await _guestRepository.GetAllAsync(); // Or FindAsync(g => g.ReservationId == id) if repo supports it
+        var reservationGuests = allGuests.Where(g => g.ReservationId == id);
+        
+        foreach (var guest in reservationGuests)
         {
-            dto.Guests.Add(new GuestDto
+             dto.Guests.Add(new GuestDto
             {
-                 Id = guest.Id,
-                 Name = guest.Name,
-                 Email = guest.Email,
-                 Phone = guest.Phone,
-                 IdNumber = guest.IdNumber,
-                 Address = guest.Address,
-                 IsPrimaryGuest = true
+                Id = guest.Id,
+                Name = guest.Name,
+                Email = guest.Email,
+                Phone = guest.Phone,
+                IdNumber = guest.IdNumber,
+                Address = guest.Address,
+                IsPrimaryGuest = guest.Id == reservation.GuestId
             });
         }
+
+        // Fallback for legacy
+        if (!dto.Guests.Any())
+        {
+             var primary = allGuests.FirstOrDefault(g => g.Id == reservation.GuestId);
+             if (primary != null)
+             {
+                dto.Guests.Add(new GuestDto
+                {
+                    Id = primary.Id,
+                    Name = primary.Name,
+                    Email = primary.Email,
+                    Phone = primary.Phone,
+                    IdNumber = primary.IdNumber,
+                    Address = primary.Address,
+                    IsPrimaryGuest = true
+                });
+             }
+        }
+
         return dto;
     }
 
     public async Task<ReservationDto> CreateReservationAsync(CreateReservationDto dto)
     {
+        // Ensure dates are UTC to satisfy Npgsql
+        if (dto.CheckInDate.Kind == DateTimeKind.Unspecified)
+            dto.CheckInDate = DateTime.SpecifyKind(dto.CheckInDate, DateTimeKind.Utc);
+        
+        if (dto.CheckOutDate.Kind == DateTimeKind.Unspecified)
+            dto.CheckOutDate = DateTime.SpecifyKind(dto.CheckOutDate, DateTimeKind.Utc);
+
         // 1. Availability Check
         var conflictingReservations = await _repository.FindAsync(r => 
             r.RoomId == dto.RoomId &&
@@ -116,14 +166,15 @@ public class ReservationService : IReservationService
              await _guestRepository.UpdateAsync(guest);
         }
 
-        // 3. Create Reservation
+        // 3. Create Reservation Entity First (to get ID)
+        var reservationId = Guid.NewGuid();
         var reservation = new Reservation
         {
-            Id = Guid.NewGuid(),
-            GuestId = guest.Id,
+            Id = reservationId,
+            GuestId = guest.Id, // Primary Guest Link
             RoomId = dto.RoomId,
-            CheckInDate = DateTime.SpecifyKind(dto.CheckInDate, DateTimeKind.Utc),
-            CheckOutDate = DateTime.SpecifyKind(dto.CheckOutDate, DateTimeKind.Utc),
+            CheckInDate = dto.CheckInDate, // Already ensuring UTC above
+            CheckOutDate = dto.CheckOutDate, // Already ensuring UTC above
             NumberOfGuests = dto.NumberOfGuests,
             TotalAmount = dto.TotalAmount,
             TotalPrice = dto.TotalAmount,
@@ -136,11 +187,49 @@ public class ReservationService : IReservationService
             CreatedAt = DateTime.UtcNow
         };
 
+        // Link Primary Guest to Reservation
+        guest.ReservationId = reservationId;
         guest.Visits++;
-        guest.TotalSpent += reservation.TotalAmount;
+        guest.TotalSpent += reservation.TotalAmount; // Only primary guest tracks total spent for now
         
+        // 4. Handle Additional Guests
+        foreach (var extraGuestDto in dto.AdditionalGuests)
+        {
+            var extraGuestsList = await _guestRepository.FindAsync(g => g.IdNumber == extraGuestDto.IdNumber);
+            var extraGuest = extraGuestsList.FirstOrDefault();
+
+            if (extraGuest == null)
+            {
+                extraGuest = new Guest
+                {
+                    Id = Guid.NewGuid(),
+                    Name = extraGuestDto.Name,
+                    IdNumber = extraGuestDto.IdNumber,
+                    Email = extraGuestDto.Email,
+                    Phone = extraGuestDto.Phone,
+                    Address = extraGuestDto.Address,
+                    IsPrimaryGuest = false,
+                    ReservationId = reservationId, // Link to this reservation
+                    IsActive = true,
+                    Visits = 1,
+                    TotalSpent = 0
+                };
+                await _guestRepository.AddAsync(extraGuest);
+            }
+            else
+            {
+                // Update existing guest
+                extraGuest.Phone = extraGuestDto.Phone;
+                extraGuest.Email = extraGuestDto.Email;
+                extraGuest.Address = extraGuestDto.Address;
+                extraGuest.ReservationId = reservationId; // Link to this new reservation
+                extraGuest.Visits++; // Increment visits
+                await _guestRepository.UpdateAsync(extraGuest);
+            }
+        }
+
         await _repository.AddAsync(reservation);
-        await _repository.SaveChangesAsync(); // Saves guest changes too implicitly if tracked
+        await _repository.SaveChangesAsync(); // Saves all guest changes as well due to EF tracking
 
         var resultDto = MapToDto(reservation);
         resultDto.Guests.Add(new GuestDto
@@ -159,6 +248,13 @@ public class ReservationService : IReservationService
 
     public async Task UpdateReservationAsync(ReservationDto dto)
     {
+        // Ensure dates are UTC
+        if (dto.CheckInDate.Kind == DateTimeKind.Unspecified)
+            dto.CheckInDate = DateTime.SpecifyKind(dto.CheckInDate, DateTimeKind.Utc);
+        
+        if (dto.CheckOutDate.Kind == DateTimeKind.Unspecified)
+            dto.CheckOutDate = DateTime.SpecifyKind(dto.CheckOutDate, DateTimeKind.Utc);
+
         var reservation = await _repository.GetByIdAsync(dto.Id);
         if (reservation == null) throw new KeyNotFoundException($"Reservation {dto.Id} not found");
 
@@ -305,18 +401,15 @@ public class ReservationService : IReservationService
             await _roomRepository.UpdateAsync(room);
         }
 
-        // Deactivate all guests (soft delete)
-        var allGuests = await _guestRepository.GetAllAsync();
-        var reservationGuests = allGuests.Where(g => g.ReservationId == reservationId).ToList();
-        foreach (var guest in reservationGuests)
-        {
-            guest.IsActive = false;
-            await _guestRepository.UpdateAsync(guest);
-        }
+        /* 
+         * REMOVED: Do not deactivate guests on checkout. 
+         * We want to keep them for history and CRM.
+         */
 
         await _repository.UpdateAsync(reservation);
         await _repository.SaveChangesAsync();
         await _roomRepository.SaveChangesAsync();
+        // Guest changes removed, so no save needed for guests specifically, but context saves all tracked.
         await _guestRepository.SaveChangesAsync();
 
         return new CheckOutResult

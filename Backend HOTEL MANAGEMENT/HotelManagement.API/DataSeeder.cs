@@ -126,14 +126,9 @@ public static class DataSeeder
     public static async Task SeedStaff(ApplicationDbContext context)
     {
         // Check if staff already exist
-        if (context.Staff.Any())
+        if (!context.Staff.Any(s => s.UserName == "admin"))
         {
-            return; // Database has been seeded
-        }
-
-        var staff = new List<Staff>
-        {
-            new Staff
+            var adminUser = new Staff
             {
                 Id = Guid.NewGuid(),
                 UserName = "admin",
@@ -146,8 +141,15 @@ public static class DataSeeder
                 Shift = ShiftType.Morning,
                 Salary = 15000,
                 IsActive = true
-            },
-            new Staff
+            };
+            context.Staff.Add(adminUser);
+            await context.SaveChangesAsync();
+        }
+
+        // Ensure receptionist user exists
+        if (!context.Staff.Any(s => s.UserName == "resepsiyon1"))
+        {
+            var receptionUser = new Staff
             {
                 Id = Guid.NewGuid(),
                 UserName = "resepsiyon1",
@@ -160,8 +162,15 @@ public static class DataSeeder
                 Shift = ShiftType.Morning,
                 Salary = 8000,
                 IsActive = true
-            },
-            new Staff
+            };
+            context.Staff.Add(receptionUser);
+            await context.SaveChangesAsync();
+        }
+
+        // Ensure housekeeping user exists
+        if (!context.Staff.Any(s => s.UserName == "temizlik1"))
+        {
+            var hkUser = new Staff
             {
                 Id = Guid.NewGuid(),
                 UserName = "temizlik1",
@@ -174,11 +183,73 @@ public static class DataSeeder
                 Shift = ShiftType.Morning,
                 Salary = 6500,
                 IsActive = true
-            }
-        };
+            };
+            context.Staff.Add(hkUser);
+            await context.SaveChangesAsync();
+        }
+        
+        // Ensure technician user exists
+        if (!context.Staff.Any(s => s.UserName == "tekniker"))
+        {
+            var techUser = new Staff
+            {
+                Id = Guid.NewGuid(),
+                UserName = "tekniker",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("tekniker123"),
+                FirstName = "Veli",
+                LastName = "Teknik",
+                Email = "teknik@otelops.com",
+                PhoneNumber = "+90 555 987 6543",
+                Role = StaffRole.Maintenance,
+                Shift = ShiftType.Morning,
+                Salary = 9000,
+                IsActive = true
+            };
+            context.Staff.Add(techUser);
+            await context.SaveChangesAsync();
+        }
 
-        context.Staff.AddRange(staff);
-        await context.SaveChangesAsync();
+        // Ensure room service user exists
+        if (!context.Staff.Any(s => s.UserName == "mutfak"))
+        {
+            var rsUser = new Staff
+            {
+                Id = Guid.NewGuid(),
+                UserName = "mutfak",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("mutfak123"),
+                FirstName = "Mehmet",
+                LastName = "Usta",
+                Email = "mutfak@otelops.com",
+                PhoneNumber = "+90 555 777 8899",
+                Role = StaffRole.RoomService,
+                Shift = ShiftType.Morning,
+                Salary = 8500,
+                IsActive = true
+            };
+            context.Staff.Add(rsUser);
+            await context.SaveChangesAsync();
+        }
+
+        // Ensure customer user exists (for demo purposes)
+        if (!context.Staff.Any(s => s.UserName == "musteri1"))
+        {
+            var customerUser = new Staff
+            {
+                Id = Guid.NewGuid(),
+                UserName = "musteri1",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("musteri123"),
+                FirstName = "Can",
+                LastName = "Misafir",
+                Email = "can@example.com",
+                PhoneNumber = "+90 555 000 0000",
+                Role = StaffRole.Customer,
+                Shift = ShiftType.Morning, // Irrelevant for customer
+                Salary = 0, // Irrelevant for customer
+                IsActive = true
+            };
+            context.Staff.Add(customerUser);
+            await context.SaveChangesAsync();
+        }
     }
 
     public static async Task SeedGuests(ApplicationDbContext context)

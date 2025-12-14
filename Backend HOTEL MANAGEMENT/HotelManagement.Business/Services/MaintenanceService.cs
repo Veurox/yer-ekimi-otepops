@@ -39,6 +39,7 @@ public class MaintenanceService : IMaintenanceService
             Priority = dto.Priority,
             ReportedBy = dto.ReportedBy,
             Status = MaintenanceStatus.Pending,
+            AssignedToId = dto.AssignedTo,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -61,7 +62,7 @@ public class MaintenanceService : IMaintenanceService
             request.Status = status;
         }
         
-        request.AssignedToId = dto.AssignedToId;
+        request.AssignedToId = dto.AssignedTo;
 
         await _repository.UpdateAsync(request);
         await _repository.SaveChangesAsync();
@@ -85,9 +86,9 @@ public class MaintenanceService : IMaintenanceService
             Title = m.Title,
             Description = m.Description,
             Priority = m.Priority.ToString().ToLower(),
-            Status = m.Status.ToString().ToLower(),
+            Status = m.Status == MaintenanceStatus.InProgress ? "in-progress" : m.Status.ToString().ToLower(),
             ReportedBy = m.ReportedBy,
-            AssignedToId = m.AssignedToId,
+            AssignedTo = m.AssignedToId,
             CreatedAt = m.CreatedAt
         };
     }

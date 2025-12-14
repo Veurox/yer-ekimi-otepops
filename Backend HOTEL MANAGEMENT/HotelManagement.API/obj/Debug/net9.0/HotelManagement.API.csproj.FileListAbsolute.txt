@@ -137,3 +137,4 @@ C:\Users\bayra\OneDrive\Desktop\yerçekimi otepops\Backend HOTEL MANAGEMENT\Hote
 C:\Users\bayra\OneDrive\Desktop\yerçekimi otepops\Backend HOTEL MANAGEMENT\HotelManagement.API\obj\Debug\net9.0\HotelManagement.API.genruntimeconfig.cache
 C:\Users\bayra\OneDrive\Desktop\yerçekimi otepops\Backend HOTEL MANAGEMENT\HotelManagement.API\obj\Debug\net9.0\ref\HotelManagement.API.dll
 C:\Users\bayra\OneDrive\Desktop\yerçekimi otepops\Backend HOTEL MANAGEMENT\HotelManagement.API\bin\Debug\net9.0\BCrypt.Net-Next.dll
+C:\Users\bayra\OneDrive\Desktop\yerçekimi otepops\Backend HOTEL MANAGEMENT\HotelManagement.API\obj\Debug\net9.0\HotelManagement.API.sourcelink.json

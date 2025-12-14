@@ -13,11 +13,12 @@ const menuItemSchema = Yup.object({
 });
 
 const RoomServicePage: React.FC = () => {
-  const { menuItems, addMenuItem, updateMenuItem, deleteMenuItem, roomServiceOrders, addRoomServiceOrder, updateRoomServiceOrder, rooms } = useHotel();
+  const { menuItems, addMenuItem, updateMenuItem, deleteMenuItem, roomServiceOrders, addRoomServiceOrder, updateRoomServiceOrder, deleteRoomServiceOrder, rooms } = useHotel();
   const [showMenuModal, setShowMenuModal] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [view, setView] = useState<'menu' | 'orders'>('menu');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
 
   const menuFormik = useFormik({
     initialValues: { name: '', category: 'Ana Yemek', price: 0, description: '', available: true },
@@ -74,13 +75,34 @@ const RoomServicePage: React.FC = () => {
       </div>
 
       <div className="card" style={{ marginBottom: '1.5rem' }}>
-        <div style={{ display: 'flex', gap: '1rem' }}>
-          <button onClick={() => setView('menu')} className={`btn ${view === 'menu' ? 'btn-primary' : 'btn-secondary'}`}>
-            Menü ({menuItems.length})
-          </button>
-          <button onClick={() => setView('orders')} className={`btn ${view === 'orders' ? 'btn-primary' : 'btn-secondary'}`}>
-            Siparişler ({roomServiceOrders.length})
-          </button>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <button onClick={() => setView('menu')} className={`btn ${view === 'menu' ? 'btn-primary' : 'btn-secondary'}`}>
+              Menü ({menuItems.length})
+            </button>
+            <button onClick={() => setView('orders')} className={`btn ${view === 'orders' ? 'btn-primary' : 'btn-secondary'}`}>
+              Siparişler ({roomServiceOrders.length})
+            </button>
+          </div>
+
+          {view === 'menu' && (
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <span style={{ fontWeight: 500 }}>Kategori Filtre:</span>
+              <select
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(e.target.value)}
+                className="form-input"
+                style={{ width: 'auto', padding: '0.5rem' }}
+              >
+                <option value="all">Tümü</option>
+                <option value="Ana Yemek">Ana Yemek</option>
+                <option value="Aperatif">Aperatif</option>
+                <option value="Tatlı">Tatlı</option>
+                <option value="İçecek">İçecek</option>
+                <option value="Kahvaltı">Kahvaltı</option>
+              </select>
+            </div>
+          )}
         </div>
       </div>
 
@@ -98,30 +120,32 @@ const RoomServicePage: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {menuItems.length === 0 ? (
+              {menuItems.filter(item => filterCategory === 'all' || item.category === filterCategory).length === 0 ? (
                 <tr><td colSpan={6} style={{ textAlign: 'center', padding: '2rem' }}>Menü ürünü yok</td></tr>
               ) : (
-                menuItems.map((item) => (
-                  <tr key={item.id}>
-                    <td><strong>{item.name}</strong></td>
-                    <td>{item.category}</td>
-                    <td>{item.description}</td>
-                    <td>{item.price} TL</td>
-                    <td>
-                      <span className={`badge ${item.available ? 'badge-success' : 'badge-danger'}`}>
-                        {item.available ? 'Mevcut' : 'Tükendi'}
-                      </span>
-                    </td>
-                    <td>
-                      <button onClick={() => { setEditingItem(item); menuFormik.setValues(item); setShowMenuModal(true); }} className="btn btn-secondary" style={{ marginRight: '0.5rem', padding: '0.5rem' }}>
-                        <Edit size={16} />
-                      </button>
-                      <button onClick={() => window.confirm('Silmek istediğinizden emin misiniz?') && deleteMenuItem(item.id)} className="btn btn-danger" style={{ padding: '0.5rem' }}>
-                        <Trash2 size={16} />
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                menuItems
+                  .filter(item => filterCategory === 'all' || item.category === filterCategory)
+                  .map((item) => (
+                    <tr key={item.id}>
+                      <td><strong>{item.name}</strong></td>
+                      <td>{item.category}</td>
+                      <td>{item.description}</td>
+                      <td>{item.price} TL</td>
+                      <td>
+                        <span className={`badge ${item.available ? 'badge-success' : 'badge-danger'}`}>
+                          {item.available ? 'Mevcut' : 'Tükendi'}
+                        </span>
+                      </td>
+                      <td>
+                        <button onClick={() => { setEditingItem(item); menuFormik.setValues(item); setShowMenuModal(true); }} className="btn btn-secondary" style={{ marginRight: '0.5rem', padding: '0.5rem' }}>
+                          <Edit size={16} />
+                        </button>
+                        <button onClick={() => window.confirm('Silmek istediğinizden emin misiniz?') && deleteMenuItem(item.id)} className="btn btn-danger" style={{ padding: '0.5rem' }}>
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
               )}
             </tbody>
           </table>
@@ -159,7 +183,16 @@ const RoomServicePage: React.FC = () => {
                         </select>
                       </td>
                       <td>{new Date(order.orderedAt).toLocaleString('tr-TR')}</td>
-                      <td>-</td>
+                      <td>
+                        <button
+                          onClick={() => window.confirm('Siparişi silmek istediğinizden emin misiniz?') && deleteRoomServiceOrder(order.id)}
+                          className="btn btn-danger"
+                          style={{ padding: '0.5rem' }}
+                          title="Siparişi Sil"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
                     </tr>
                   );
                 })

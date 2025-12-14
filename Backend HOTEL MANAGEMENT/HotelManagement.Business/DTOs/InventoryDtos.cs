@@ -9,7 +9,9 @@ public class InventoryItemDto
     public string Category { get; set; } = string.Empty;
     public int Quantity { get; set; }
     public string Unit { get; set; } = string.Empty;
+    public int MinQuantity { get; set; }
     public decimal PricePerUnit { get; set; }
+    public string Supplier { get; set; } = string.Empty;
 }
 
 public class CreateInventoryItemDto

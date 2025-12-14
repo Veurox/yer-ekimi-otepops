@@ -57,6 +57,7 @@ interface HotelContextType {
   roomServiceOrders: RoomServiceOrder[];
   addRoomServiceOrder: (order: Omit<RoomServiceOrder, 'id'>) => void;
   updateRoomServiceOrder: (id: string, order: Partial<RoomServiceOrder>) => void;
+  deleteRoomServiceOrder: (id: string) => void;
 
   // Inventory
   inventory: InventoryItem[];
@@ -446,6 +447,16 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
+  const deleteRoomServiceOrder = async (id: string) => {
+    try {
+      await hotelService.deleteRoomServiceOrder(id);
+      setRoomServiceOrders(prev => prev.filter(o => o.id !== id));
+    } catch (error) {
+      console.error('Error deleting room service order:', error);
+      alert('Oda servisi siparişi silinirken hata oluştu.');
+    }
+  };
+
   // Inventory functions
   const addInventoryItem = async (item: Omit<InventoryItem, 'id'>) => {
     try {
@@ -489,7 +500,7 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         reservations, addReservation, updateReservation, deleteReservation, checkInReservation, checkOutReservation,
         maintenanceRequests, addMaintenanceRequest, updateMaintenanceRequest, deleteMaintenanceRequest,
         menuItems, addMenuItem, updateMenuItem, deleteMenuItem,
-        roomServiceOrders, addRoomServiceOrder, updateRoomServiceOrder,
+        roomServiceOrders, addRoomServiceOrder, updateRoomServiceOrder, deleteRoomServiceOrder,
         inventory, addInventoryItem, updateInventoryItem, deleteInventoryItem,
       }}
     >

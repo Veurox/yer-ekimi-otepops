@@ -13,3 +13,4 @@ C:\Users\bayra\OneDrive\Desktop\yerçekimi otepops\Backend HOTEL MANAGEMENT\Hote
 C:\Users\bayra\OneDrive\Desktop\yerçekimi otepops\Backend HOTEL MANAGEMENT\HotelManagement.Business\obj\Debug\net9.0\refint\HotelManagement.Business.dll
 C:\Users\bayra\OneDrive\Desktop\yerçekimi otepops\Backend HOTEL MANAGEMENT\HotelManagement.Business\obj\Debug\net9.0\HotelManagement.Business.pdb
 C:\Users\bayra\OneDrive\Desktop\yerçekimi otepops\Backend HOTEL MANAGEMENT\HotelManagement.Business\obj\Debug\net9.0\ref\HotelManagement.Business.dll
+C:\Users\bayra\OneDrive\Desktop\yerçekimi otepops\Backend HOTEL MANAGEMENT\HotelManagement.Business\obj\Debug\net9.0\HotelManagement.Business.sourcelink.json

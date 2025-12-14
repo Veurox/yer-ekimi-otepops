@@ -44,7 +44,7 @@ const MaintenancePage: React.FC = () => {
         // Odayı bakım durumuna al
         updateRoom(values.roomId, { status: 'maintenance' });
       }
-      
+
       setShowModal(false);
       setEditingRequest(null);
       formik.resetForm();
@@ -70,7 +70,7 @@ const MaintenancePage: React.FC = () => {
   };
 
   const handleStatusChange = (requestId: string, newStatus: MaintenanceStatus, roomId: string) => {
-    updateMaintenanceRequest(requestId, { 
+    updateMaintenanceRequest(requestId, {
       status: newStatus,
       completedAt: newStatus === 'completed' ? new Date().toISOString() : undefined,
     });
@@ -88,7 +88,8 @@ const MaintenancePage: React.FC = () => {
       high: { class: 'badge-danger', text: 'Yüksek' },
       urgent: { class: 'badge-danger', text: '🚨 ACİL' },
     };
-    return badges[priority];
+    // @ts-ignore
+    return badges[priority] || { class: 'badge-secondary', text: priority };
   };
 
   const getStatusBadge = (status: MaintenanceStatus) => {
@@ -97,7 +98,8 @@ const MaintenancePage: React.FC = () => {
       'in-progress': { class: 'badge-info', text: 'Devam Ediyor' },
       completed: { class: 'badge-success', text: 'Tamamlandı' },
     };
-    return badges[status];
+    // @ts-ignore
+    return badges[status] || { class: 'badge-secondary', text: status };
   };
 
   const filteredRequests = maintenanceRequests.filter(req => {
@@ -123,25 +125,25 @@ const MaintenancePage: React.FC = () => {
 
       <div className="card" style={{ marginBottom: '1.5rem' }}>
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-          <button 
+          <button
             onClick={() => setFilter('all')}
             className={`btn ${filter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
           >
             Tümü ({maintenanceRequests.length})
           </button>
-          <button 
+          <button
             onClick={() => setFilter('pending')}
             className={`btn ${filter === 'pending' ? 'btn-warning' : 'btn-secondary'}`}
           >
             Bekleyen ({maintenanceRequests.filter(r => r.status === 'pending').length})
           </button>
-          <button 
+          <button
             onClick={() => setFilter('in-progress')}
             className={`btn ${filter === 'in-progress' ? 'btn-primary' : 'btn-secondary'}`}
           >
             Devam Eden ({maintenanceRequests.filter(r => r.status === 'in-progress').length})
           </button>
-          <button 
+          <button
             onClick={() => setFilter('completed')}
             className={`btn ${filter === 'completed' ? 'btn-success' : 'btn-secondary'}`}
           >
@@ -200,18 +202,18 @@ const MaintenancePage: React.FC = () => {
                     <td>{new Date(request.createdAt).toLocaleDateString('tr-TR')}</td>
                     <td>
                       <div style={{ display: 'flex', gap: '0.25rem' }}>
-                        <button 
-                          onClick={() => openEditModal(request)} 
-                          className="btn btn-secondary" 
+                        <button
+                          onClick={() => openEditModal(request)}
+                          className="btn btn-secondary"
                           style={{ padding: '0.5rem' }}
                           title="Düzenle"
                         >
                           <Edit size={16} />
                         </button>
                         {request.status === 'pending' && (
-                          <button 
+                          <button
                             onClick={() => handleStatusChange(request.id, 'in-progress', request.roomId)}
-                            className="btn btn-primary" 
+                            className="btn btn-primary"
                             style={{ padding: '0.5rem' }}
                             title="Başlat"
                           >
@@ -219,9 +221,9 @@ const MaintenancePage: React.FC = () => {
                           </button>
                         )}
                         {request.status === 'in-progress' && (
-                          <button 
+                          <button
                             onClick={() => handleStatusChange(request.id, 'completed', request.roomId)}
-                            className="btn btn-success" 
+                            className="btn btn-success"
                             style={{ padding: '0.5rem' }}
                             title="Tamamla"
                           >

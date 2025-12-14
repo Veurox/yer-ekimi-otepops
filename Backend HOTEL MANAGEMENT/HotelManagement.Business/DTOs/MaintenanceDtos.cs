@@ -11,7 +11,7 @@ public class MaintenanceRequestDto
     public string Priority { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
     public string ReportedBy { get; set; } = string.Empty;
-    public Guid? AssignedToId { get; set; }
+    public Guid? AssignedTo { get; set; }
     public DateTime CreatedAt { get; set; }
 }
 
@@ -22,4 +22,5 @@ public class CreateMaintenanceRequestDto
     public string Description { get; set; } = string.Empty;
     public MaintenancePriority Priority { get; set; }
     public string ReportedBy { get; set; } = string.Empty;
+    public Guid? AssignedTo { get; set; }
 }

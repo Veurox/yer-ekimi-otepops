@@ -52,7 +52,9 @@ public class MenuService : IMenuService
         if (item == null) throw new KeyNotFoundException($"MenuItem {dto.Id} not found");
 
         item.Name = dto.Name;
+        item.Category = dto.Category;
         item.Price = dto.Price;
+        item.Description = dto.Description;
         item.Available = dto.Available;
 
         await _repository.UpdateAsync(item);
@@ -76,6 +78,7 @@ public class MenuService : IMenuService
             Name = m.Name,
             Category = m.Category,
             Price = m.Price,
+            Description = m.Description,
             Available = m.Available,
             Image = m.Image
         };

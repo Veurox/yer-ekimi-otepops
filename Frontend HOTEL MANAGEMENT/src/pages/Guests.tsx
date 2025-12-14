@@ -14,7 +14,7 @@ const guestSchema = Yup.object({
 });
 
 const GuestsPage: React.FC = () => {
-  const { guests, addGuest, updateGuest, deleteGuest } = useHotel();
+  const { guests, addGuest, updateGuest, deleteGuest, reservations } = useHotel();
   const [showModal, setShowModal] = useState(false);
   const [editingGuest, setEditingGuest] = useState<Guest | null>(null);
   const [filter, setFilter] = useState<'all' | 'current' | 'past'>('all');
@@ -79,13 +79,28 @@ const GuestsPage: React.FC = () => {
     }
   };
 
+  const isGuestStaying = (guestId: string) => {
+    return reservations.some(r => {
+      const isLinked = r.guestId === guestId || r.guests?.some(g => g.id === guestId);
+      return isLinked && r.status === 'checked-in';
+    });
+  };
+
+  const hasGuestStayed = (guestId: string) => {
+    return reservations.some(r => {
+      const isLinked = r.guestId === guestId || r.guests?.some(g => g.id === guestId);
+      return isLinked && r.status === 'checked-out';
+    });
+  };
+
   const filteredGuests = guests.filter(guest => {
-    if (filter === 'current') return guest.checkInDate && !guest.checkOutDate;
-    if (filter === 'past') return guest.checkOutDate;
+    if (filter === 'current') return isGuestStaying(guest.id);
+    if (filter === 'past') return hasGuestStayed(guest.id) && !isGuestStaying(guest.id);
     return true;
   });
 
-  const currentGuests = guests.filter(g => g.checkInDate && !g.checkOutDate);
+  const currentGuests = guests.filter(g => isGuestStaying(g.id));
+  const pastGuests = guests.filter(g => hasGuestStayed(g.id) && !isGuestStaying(g.id));
 
   return (
     <div>
@@ -119,7 +134,7 @@ const GuestsPage: React.FC = () => {
             onClick={() => setFilter('past')}
             className={`btn ${filter === 'past' ? 'btn-primary' : 'btn-secondary'}`}
           >
-            Geçmiş Misafirler ({guests.filter(g => g.checkOutDate).length})
+            Geçmiş Misafirler ({pastGuests.length})
           </button>
         </div>
       </div>
@@ -147,41 +162,46 @@ const GuestsPage: React.FC = () => {
                 </td>
               </tr>
             ) : (
-              filteredGuests.map((guest) => (
-                <tr key={guest.id}>
-                  <td><strong>{guest.name}</strong></td>
-                  <td>{guest.email}</td>
-                  <td>{guest.phone}</td>
-                  <td>{guest.idNumber}</td>
-                  <td>
-                    {guest.checkInDate && !guest.checkOutDate ? (
-                      <span className="badge badge-success">Konaklıyor</span>
-                    ) : guest.checkOutDate ? (
-                      <span className="badge badge-info">Geçmiş Misafir</span>
-                    ) : (
-                      <span className="badge badge-warning">Kayıt</span>
-                    )}
-                  </td>
-                  <td>{guest.visits} kez</td>
-                  <td>{guest.totalSpent.toLocaleString('tr-TR')} TL</td>
-                  <td>
-                    <button
-                      onClick={() => openEditModal(guest)}
-                      className="btn btn-secondary"
-                      style={{ marginRight: '0.5rem', padding: '0.5rem' }}
-                    >
-                      <Edit size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(guest.id)}
-                      className="btn btn-danger"
-                      style={{ padding: '0.5rem' }}
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </td>
-                </tr>
-              ))
+              filteredGuests.map((guest) => {
+                const staying = isGuestStaying(guest.id);
+                const past = hasGuestStayed(guest.id);
+
+                return (
+                  <tr key={guest.id}>
+                    <td><strong>{guest.name}</strong></td>
+                    <td>{guest.email}</td>
+                    <td>{guest.phone}</td>
+                    <td>{guest.idNumber}</td>
+                    <td>
+                      {staying ? (
+                        <span className="badge badge-success">Konaklıyor</span>
+                      ) : past ? (
+                        <span className="badge badge-info">Geçmiş Misafir</span>
+                      ) : (
+                        <span className="badge badge-warning">Kayıt</span>
+                      )}
+                    </td>
+                    <td>{guest.visits} kez</td>
+                    <td>{guest.totalSpent.toLocaleString('tr-TR')} TL</td>
+                    <td>
+                      <button
+                        onClick={() => openEditModal(guest)}
+                        className="btn btn-secondary"
+                        style={{ marginRight: '0.5rem', padding: '0.5rem' }}
+                      >
+                        <Edit size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(guest.id)}
+                        className="btn btn-danger"
+                        style={{ padding: '0.5rem' }}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

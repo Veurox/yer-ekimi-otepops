@@ -15,3 +15,4 @@ C:\Users\bayra\OneDrive\Desktop\yerçekimi otepops\Backend HOTEL MANAGEMENT\Hote
 C:\Users\bayra\OneDrive\Desktop\yerçekimi otepops\Backend HOTEL MANAGEMENT\HotelManagement.Infrastructure\obj\Debug\net9.0\HotelManagement.Infrastructure.pdb
 C:\Users\bayra\OneDrive\Desktop\yerçekimi otepops\Backend HOTEL MANAGEMENT\HotelManagement.Infrastructure\obj\Debug\net9.0\HotelManagement.Infrastructure.genruntimeconfig.cache
 C:\Users\bayra\OneDrive\Desktop\yerçekimi otepops\Backend HOTEL MANAGEMENT\HotelManagement.Infrastructure\obj\Debug\net9.0\ref\HotelManagement.Infrastructure.dll
+C:\Users\bayra\OneDrive\Desktop\yerçekimi otepops\Backend HOTEL MANAGEMENT\HotelManagement.Infrastructure\obj\Debug\net9.0\HotelManagement.Infrastructure.sourcelink.json
