@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: hotel_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: HotelManagementDb_Final
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: "./Backend HOTEL MANAGEMENT"
+      dockerfile: Dockerfile
+    container_name: hotel_backend
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=db;Database=HotelManagementDb_Final;Username=postgres;Password=123
+      - ASPNETCORE_URLS=http://+:8080
+    ports:
+      - "5098:8080"
+    depends_on:
+      - db
+    restart: on-failure
+
+  frontend:
+    build:
+      context: "./Frontend HOTEL MANAGEMENT"
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=http://localhost:5098/api
+    container_name: hotel_frontend
+    ports:
+      - "3001:80"
+    depends_on:
+      - backend
+    restart: on-failure
+
+volumes:
+  postgres_data:
