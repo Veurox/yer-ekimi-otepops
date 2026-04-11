@@ -21,6 +21,16 @@ public class GuestsController : ControllerBase
         return Ok(await _service.GetAllGuestsAsync());
     }
 
+    [HttpGet("paged")]
+    public async Task<ActionResult<PagedResultDto<GuestDto>>> GetPaged(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string? search = null)
+    {
+        var result = await _service.GetPagedAsync(page, pageSize, search);
+        return Ok(result);
+    }
+
     [HttpGet("{id}")]
     public async Task<ActionResult<GuestDto>> GetById(Guid id)
     {

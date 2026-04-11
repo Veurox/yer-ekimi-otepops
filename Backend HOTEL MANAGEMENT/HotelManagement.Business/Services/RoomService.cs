@@ -32,7 +32,7 @@ public class RoomService : IRoomService
         var dtos = rooms.Select(MapToDto).ToList();
 
         // 3. Set Cache
-        await _cacheService.SetAsync(CacheKey, dtos, TimeSpan.FromMinutes(30));
+        await _cacheService.SetAsync(CacheKey, dtos, TimeSpan.FromMinutes(5));
 
         return dtos;
     }
@@ -46,12 +46,24 @@ public class RoomService : IRoomService
 
     public async Task<RoomDto> CreateRoomAsync(CreateRoomDto dto)
     {
-        // Parse Type string to enum
+        // Validate price
+        if (dto.Price < 0)
+            throw new InvalidOperationException("Oda fiyati negatif olamaz.");
+
+        // Validate capacity
+        if (dto.Capacity <= 0 || dto.Capacity > 20)
+            throw new InvalidOperationException("Oda kapasitesi 1-20 arasi olmali.");
+
+        // Validate room number uniqueness
+        var existing = await _repository.FindAsync(r => r.Number == dto.Number);
+        if (existing.Any())
+            throw new InvalidOperationException($"'{dto.Number}' numarali oda zaten mevcut.");
+
         if (!Enum.TryParse<RoomType>(dto.Type, true, out var roomType))
         {
-            roomType = RoomType.Single; // Default fallback
+            roomType = RoomType.Single;
         }
-        
+
         var room = new Room
         {
             Id = Guid.NewGuid(),
@@ -61,7 +73,7 @@ public class RoomService : IRoomService
             Floor = dto.Floor,
             Capacity = dto.Capacity,
             Features = dto.Features,
-            Status = RoomStatus.Available // Default
+            Status = RoomStatus.Available
         };
 
         await _repository.AddAsync(room);
@@ -76,22 +88,36 @@ public class RoomService : IRoomService
         var room = await _repository.GetByIdAsync(dto.Id);
         if (room == null) throw new KeyNotFoundException($"Room {dto.Id} not found");
 
+        // Validate price
+        if (dto.Price < 0)
+            throw new InvalidOperationException("Oda fiyati negatif olamaz.");
+
+        // Validate room number uniqueness (if changed)
+        if (room.Number != dto.Number)
+        {
+            var existing = await _repository.FindAsync(r => r.Number == dto.Number && r.Id != dto.Id);
+            if (existing.Any())
+                throw new InvalidOperationException($"'{dto.Number}' numarali oda zaten mevcut.");
+        }
+
         room.Number = dto.Number;
-        
-        // Parse Type string to enum
+
         if (Enum.TryParse<RoomType>(dto.Type, true, out var roomType))
         {
             room.Type = roomType;
         }
-        
+
         room.Price = dto.Price;
-        
-        // Parse Status string to enum
-        if (Enum.TryParse<RoomStatus>(dto.Status, true, out var roomStatus))
+
+        // Status change with state machine validation
+        if (Enum.TryParse<RoomStatus>(dto.Status, true, out var newStatus))
         {
-            room.Status = roomStatus;
+            if (newStatus != room.Status)
+            {
+                room.TransitionTo(newStatus);
+            }
         }
-        
+
         room.Floor = dto.Floor;
         room.Capacity = dto.Capacity;
         room.Features = dto.Features;
@@ -116,16 +142,9 @@ public class RoomService : IRoomService
         var room = await _repository.GetByIdAsync(roomId);
         if (room == null) throw new KeyNotFoundException($"Room {roomId} not found");
 
-        // Consider validating if room.Status == RoomStatus.Cleaning
-        // For flexibility, maybe allow cleaning from other states or enforce strict flow
-        if (room.Status != RoomStatus.Cleaning)
-        {
-            // You can either throw exception or just allow it.
-            // Let's enforce strict flow for better control:
-            throw new InvalidOperationException($"Room {room.Number} is not in Cleaning status (Current: {room.Status})");
-        }
+        // State machine enforces: only Cleaning -> Available
+        room.TransitionTo(RoomStatus.Available);
 
-        room.Status = RoomStatus.Available;
         await _repository.UpdateAsync(room);
         await _repository.SaveChangesAsync();
         await _cacheService.RemoveAsync(CacheKey);

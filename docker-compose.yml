@@ -6,12 +6,28 @@ services:
     container_name: hotel_db
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 123
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-123}
       POSTGRES_DB: HotelManagementDb_Final
     ports:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: hotel_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   backend:
     build:
@@ -19,12 +35,21 @@ services:
       dockerfile: Dockerfile
     container_name: hotel_backend
     environment:
-      - ConnectionStrings__DefaultConnection=Host=db;Database=HotelManagementDb_Final;Username=postgres;Password=123
+      - ConnectionStrings__DefaultConnection=Host=db;Database=HotelManagementDb_Final;Username=postgres;Password=${DB_PASSWORD:-123}
+      - ConnectionStrings__Redis=redis:6379
+      - Jwt__Key=${JWT_KEY:-ThisIsASecretKeyForJwtTokenGenerationShouldBeLongEnough2024OtelOPS}
+      - Jwt__Issuer=OtelOPS
+      - Jwt__Audience=OtelOPS
+      - Cors__AllowedOrigins__0=http://localhost:3001
+      - Cors__AllowedOrigins__1=http://localhost:5173
       - ASPNETCORE_URLS=http://+:8080
     ports:
       - "5098:8080"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: on-failure
 
   frontend:

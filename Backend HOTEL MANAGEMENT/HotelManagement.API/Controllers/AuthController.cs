@@ -39,7 +39,7 @@ public class AuthController : ControllerBase
             ThemePreference = "light"
         };
 
-        return Ok(new { Token = token, User = userDto });
+        return Ok(new { token, user = userDto });
     }
 
     [HttpPost("register")]

@@ -495,4 +495,70 @@ public static class DataSeeder
         context.RoomServiceOrders.Add(order);
         await context.SaveChangesAsync();
     }
+
+    public static async Task SeedRatePlans(ApplicationDbContext context)
+    {
+        if (context.RatePlans.Any()) return;
+
+        var plans = new List<RatePlan>
+        {
+            new RatePlan
+            {
+                Id              = Guid.NewGuid(),
+                Name            = "Yaz Sezonu",
+                Description     = "Haziran-Eylül arası yaz sezonu fiyatları (%20 zam)",
+                AdjustmentType  = RatePlanAdjustmentType.Percentage,
+                AdjustmentValue = 20,
+                IsActive        = true,
+                Priority        = 10,
+                ValidFrom       = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc),
+                ValidTo         = new DateTime(2026, 9, 30, 0, 0, 0, DateTimeKind.Utc),
+                ApplicableDays  = new List<DayOfWeek>(),
+                CreatedAt       = DateTime.UtcNow
+            },
+            new RatePlan
+            {
+                Id              = Guid.NewGuid(),
+                Name            = "Hafta Sonu",
+                Description     = "Cuma-Cumartesi geceleri %15 fark",
+                AdjustmentType  = RatePlanAdjustmentType.Percentage,
+                AdjustmentValue = 15,
+                IsActive        = true,
+                Priority        = 5,
+                ValidFrom       = null,
+                ValidTo         = null,
+                ApplicableDays  = new List<DayOfWeek> { DayOfWeek.Friday, DayOfWeek.Saturday },
+                CreatedAt       = DateTime.UtcNow
+            },
+            new RatePlan
+            {
+                Id              = Guid.NewGuid(),
+                Name            = "Erken Rezervasyon",
+                Description     = "30 gün önceden rezervasyona %10 indirim",
+                AdjustmentType  = RatePlanAdjustmentType.Percentage,
+                AdjustmentValue = -10,
+                IsActive        = true,
+                Priority        = 3,
+                ValidFrom       = null,
+                ValidTo         = null,
+                ApplicableDays  = new List<DayOfWeek>(),
+                CreatedAt       = DateTime.UtcNow
+            }
+        };
+
+        context.RatePlans.AddRange(plans);
+        await context.SaveChangesAsync();
+    }
+
+    public static async Task SeedDynamicPricingRules(ApplicationDbContext context)
+    {
+        if (context.DynamicPricingRules.Any()) return;
+        var rules = new List<HotelManagement.Core.Entities.DynamicPricingRule>
+        {
+            new() { Id=Guid.NewGuid(), Name="Yüksek Doluluk (+20%)", Trigger=HotelManagement.Core.Enums.DynamicPricingTrigger.OccupancyBased, ThresholdValue=80, AdjustmentPercent=20, IsActive=true, Priority=1, CreatedAt=DateTime.UtcNow },
+            new() { Id=Guid.NewGuid(), Name="Son Dakika (-15%)", Trigger=HotelManagement.Core.Enums.DynamicPricingTrigger.DaysBefore, ThresholdValue=2, AdjustmentPercent=-15, IsActive=true, Priority=2, CreatedAt=DateTime.UtcNow },
+        };
+        context.DynamicPricingRules.AddRange(rules);
+        await context.SaveChangesAsync();
+    }
 }

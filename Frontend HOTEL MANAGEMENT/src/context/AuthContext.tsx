@@ -24,7 +24,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return true;
     } catch (error) {
       console.error('API Login failed:', error);
-      throw error;
+      return false;
     }
   };
 

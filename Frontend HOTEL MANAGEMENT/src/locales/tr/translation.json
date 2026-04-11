@@ -1,0 +1,132 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "rooms": "Odalar",
+    "staff": "Personel",
+    "guests": "Misafirler",
+    "reservations": "Rezervasyonlar",
+    "maintenance": "Teknik Servis",
+    "roomService": "Oda Servisi",
+    "inventory": "Envanter",
+    "search": "Arama",
+    "aiAssistant": "AI Asistan",
+    "payments": "Ödemeler",
+    "invoices": "Faturalar",
+    "reports": "Raporlar",
+    "ratePlans": "Rate Planları",
+    "auditLog": "Denetim Günlüğü",
+    "guestCrm": "Misafir CRM",
+    "dynamicPricing": "Dinamik Fiyat",
+    "loyalty": "Sadakat Programı",
+    "surveys": "Anketler",
+    "pos": "POS Satış",
+    "housekeeping": "Temizlik"
+  },
+  "common": {
+    "save": "Kaydet",
+    "cancel": "İptal",
+    "delete": "Sil",
+    "edit": "Düzenle",
+    "add": "Ekle",
+    "search": "Ara",
+    "loading": "Yükleniyor…",
+    "noData": "Veri bulunamadı.",
+    "confirm": "Onayla",
+    "back": "Geri",
+    "next": "Devam",
+    "refresh": "Yenile",
+    "status": "Durum",
+    "actions": "İşlemler",
+    "total": "Toplam",
+    "date": "Tarih",
+    "notes": "Notlar",
+    "logout": "Çıkış"
+  },
+  "auth": {
+    "login": "Giriş Yap",
+    "username": "Kullanıcı Adı",
+    "password": "Şifre",
+    "loginError": "Kullanıcı adı veya şifre hatalı."
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "totalRooms": "Toplam Oda",
+    "occupied": "Dolu",
+    "available": "Boş",
+    "todayCheckIns": "Bugün Giriş",
+    "todayCheckOuts": "Bugün Çıkış",
+    "revenue": "Gelir"
+  },
+  "rooms": {
+    "title": "Odalar",
+    "number": "No",
+    "type": "Tür",
+    "floor": "Kat",
+    "capacity": "Kapasite",
+    "price": "Fiyat",
+    "status": {
+      "available": "Boş",
+      "occupied": "Dolu",
+      "cleaning": "Temizleniyor",
+      "maintenance": "Bakımda",
+      "reserved": "Rezerveli"
+    }
+  },
+  "reservations": {
+    "title": "Rezervasyonlar",
+    "checkIn": "Giriş",
+    "checkOut": "Çıkış",
+    "guest": "Misafir",
+    "room": "Oda",
+    "status": {
+      "pending": "Bekliyor",
+      "confirmed": "Onaylandı",
+      "checkedIn": "Giriş Yapıldı",
+      "checkedOut": "Çıkış Yapıldı",
+      "cancelled": "İptal"
+    }
+  },
+  "housekeeping": {
+    "title": "Temizlik Yönetimi",
+    "newTask": "Yeni Görev",
+    "taskType": "Görev Türü",
+    "priority": "Öncelik",
+    "assignedTo": "Atanan",
+    "scheduledDate": "Tarih",
+    "types": {
+      "DailyClean": "Günlük Temizlik",
+      "DeepClean": "Derin Temizlik",
+      "TurnDown": "Gece Hazırlığı",
+      "LinenChange": "Çarşaf Değişimi",
+      "CheckoutClean": "Çıkış Temizliği"
+    },
+    "statuses": {
+      "Pending": "Bekliyor",
+      "InProgress": "Devam Ediyor",
+      "Completed": "Tamamlandı",
+      "Skipped": "Atlandı"
+    }
+  },
+  "pos": {
+    "title": "POS – Satış & Oda Hesabı",
+    "newSale": "Yeni Satış Ekle",
+    "description": "Açıklama",
+    "amount": "Tutar",
+    "category": "Kategori",
+    "chargeToRoom": "Odaya Ekle",
+    "categories": {
+      "Restaurant": "Restoran",
+      "Bar": "Bar",
+      "Spa": "Spa",
+      "Minibar": "Minibar",
+      "Laundry": "Çamaşırhane",
+      "Other": "Diğer"
+    },
+    "statuses": {
+      "Pending": "Bekliyor",
+      "ChargedToRoom": "Odaya Eklendi",
+      "Paid": "Ödendi",
+      "Cancelled": "İptal"
+    }
+  }
+}

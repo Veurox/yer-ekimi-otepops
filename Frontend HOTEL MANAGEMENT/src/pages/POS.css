@@ -1,0 +1,56 @@
+/* POS Page responsive styles */
+.pos-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.pos-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .pos-tabs {
+    flex-direction: column;
+  }
+
+  .pos-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Hide less important table columns on mobile */
+  .pos-table-hide-mobile {
+    display: none;
+  }
+
+  /* Make action buttons smaller on mobile */
+  .btn.btn-sm {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  /* Stack header actions */
+  .pos-header-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pos-header-actions input {
+    min-width: unset;
+    width: 100%;
+  }
+
+  /* Summary card numbers smaller on mobile */
+  .pos-summary-total {
+    font-size: 1.2rem !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .pos-form-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+}

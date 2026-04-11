@@ -38,8 +38,10 @@ interface HotelContextType {
   addReservation: (reservation: CreateReservationPayload) => Promise<void>;
   updateReservation: (id: string, reservation: Partial<Reservation>) => void;
   deleteReservation: (id: string) => void;
+  confirmReservation: (id: string) => Promise<void>;
   checkInReservation: (id: string) => Promise<void>;
   checkOutReservation: (id: string, force?: boolean) => Promise<void>;
+  cancelReservation: (id: string, reason?: string) => Promise<void>;
 
   // Maintenance
   maintenanceRequests: MaintenanceRequest[];
@@ -289,11 +291,20 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
+  const confirmReservation = async (id: string) => {
+    try {
+      const response = await hotelService.confirmReservation(id);
+      setReservations(prev => prev.map(r => r.id === id ? response.data : r));
+    } catch (error: any) {
+      console.error('Error confirming reservation:', error);
+      alert(error.response?.data?.message || 'Rezervasyon onaylanırken hata oluştu.');
+    }
+  };
+
   const checkInReservation = async (id: string) => {
     try {
       const response = await hotelService.checkInReservation(id);
       setReservations(prev => prev.map(r => r.id === id ? response.data : r));
-      // Refresh related data
       const roomsRes = await hotelService.getRooms();
       setRooms(roomsRes.data);
       const guestsRes = await hotelService.getGuests();
@@ -308,27 +319,37 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     try {
       const response = await hotelService.checkOutReservation(id, force);
       if (!response.data.success && response.data.requiresPayment) {
-        const confirm = window.confirm(`${response.data.message}\nÖdemeyi onaylayıp çıkışı zorlamak istiyor musunuz?`);
-        if (confirm) {
+        const userConfirm = window.confirm(`${response.data.message}\nÖdemeyi onaylayıp çıkışı zorlamak istiyor musunuz?`);
+        if (userConfirm) {
           await checkOutReservation(id, true);
         }
         return;
       }
 
-      // Refresh data
       const resList = await hotelService.getReservations();
       setReservations(resList.data);
-
       const roomsRes = await hotelService.getRooms();
       setRooms(roomsRes.data);
-
       const guestsRes = await hotelService.getGuests();
       setGuests(guestsRes.data);
-
       alert('Check-out işlemi başarılı.');
     } catch (error: any) {
       console.error('Error checking out:', error);
       alert(error.response?.data?.message || 'Check-out sırasında hata oluştu.');
+    }
+  };
+
+  const cancelReservation = async (id: string, reason?: string) => {
+    try {
+      const response = await hotelService.cancelReservation(id, reason);
+      setReservations(prev => prev.map(r => r.id === id ? response.data : r));
+      const roomsRes = await hotelService.getRooms();
+      setRooms(roomsRes.data);
+      const guestsRes = await hotelService.getGuests();
+      setGuests(guestsRes.data);
+    } catch (error: any) {
+      console.error('Error cancelling reservation:', error);
+      alert(error.response?.data?.message || 'Rezervasyon iptal edilirken hata oluştu.');
     }
   };
 
@@ -497,7 +518,7 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         rooms, addRoom, updateRoom, deleteRoom, completeRoomCleaning,
         staff, addStaff, updateStaff, deleteStaff,
         guests, addGuest, updateGuest, deleteGuest,
-        reservations, addReservation, updateReservation, deleteReservation, checkInReservation, checkOutReservation,
+        reservations, addReservation, updateReservation, deleteReservation, confirmReservation, checkInReservation, checkOutReservation, cancelReservation,
         maintenanceRequests, addMaintenanceRequest, updateMaintenanceRequest, deleteMaintenanceRequest,
         menuItems, addMenuItem, updateMenuItem, deleteMenuItem,
         roomServiceOrders, addRoomServiceOrder, updateRoomServiceOrder, deleteRoomServiceOrder,

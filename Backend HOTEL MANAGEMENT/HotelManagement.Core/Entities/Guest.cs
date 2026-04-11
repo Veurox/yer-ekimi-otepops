@@ -33,4 +33,12 @@ public class Guest : IEntity
     // Statistics
     public decimal TotalSpent { get; set; }
     public int Visits { get; set; }
+
+    // Faz 3: CRM & Loyalty
+    public int TotalStays { get; set; }
+    public int LoyaltyPoints { get; set; }
+    public string? VipLevel { get; set; }
+
+    public ICollection<GuestPreference> Preferences { get; set; } = new List<GuestPreference>();
+    public ICollection<GuestNote> Notes { get; set; } = new List<GuestNote>();
 }

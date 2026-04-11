@@ -75,3 +75,73 @@ public enum InventoryCategory
     Linens,
     Other
 }
+
+public enum PaymentStatus
+{
+    Pending,
+    Completed,
+    PartiallyPaid,
+    Refunded,
+    Failed
+}
+
+public enum PaymentType
+{
+    Reservation,
+    RoomService,
+    Deposit,
+    Refund,
+    AdditionalCharge,
+    RestaurantCharge,
+    BarCharge
+}
+
+public enum PosCategory
+{
+    Restaurant,
+    Bar,
+    Spa,
+    Minibar,
+    Laundry,
+    Other
+}
+
+public enum PosStatus
+{
+    Pending,
+    ChargedToRoom,
+    Paid,
+    Cancelled
+}
+
+public enum HousekeepingTaskType
+{
+    DailyClean,
+    DeepClean,
+    TurnDown,
+    LinenChange,
+    CheckoutClean
+}
+
+public enum HousekeepingStatus
+{
+    Pending,
+    InProgress,
+    Completed,
+    Skipped
+}
+
+public enum InvoiceStatus
+{
+    Draft,
+    Issued,
+    Paid,
+    Cancelled
+}
+
+public enum DynamicPricingTrigger
+{
+    OccupancyBased,
+    DaysBefore,
+    SeasonBased
+}

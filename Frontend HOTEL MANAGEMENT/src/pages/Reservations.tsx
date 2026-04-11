@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { useHotel } from '../context/HotelContext';
-import { Reservation, ReservationStatus, CreateReservationPayload } from '../types';
-import { Plus, Edit, Calendar, CheckCircle, XCircle, LogOut, LogIn } from 'lucide-react';
+import { Reservation, ReservationStatus, CreateReservationPayload, WalkInPayload } from '../types';
+import { hotelService } from '../services/hotelService';
+import { Plus, Edit, Calendar, CheckCircle, XCircle, LogOut, LogIn, UserPlus } from 'lucide-react';
 
 const reservationSchema = Yup.object({
   roomId: Yup.string().required('Oda seçimi gerekli'),
@@ -30,13 +31,17 @@ const reservationSchema = Yup.object({
 
 const ReservationsPage: React.FC = () => {
   const {
-    reservations, addReservation, updateReservation, checkInReservation, checkOutReservation,
+    reservations, addReservation, updateReservation, confirmReservation, checkInReservation, checkOutReservation, cancelReservation,
     rooms, guests
   } = useHotel();
 
   const [showModal, setShowModal] = useState(false);
   const [editingReservation, setEditingReservation] = useState<Reservation | null>(null);
-  const [filter, setFilter] = useState<'all' | 'pending' | 'confirmed' | 'checked-in' | 'checked-out'>('all');
+  const [filter, setFilter] = useState<'all' | 'pending' | 'confirmed' | 'checked-in' | 'checked-out' | 'cancelled'>('all');
+  const [showWalkIn, setShowWalkIn] = useState(false);
+  const [walkInForm, setWalkInForm] = useState<Partial<WalkInPayload>>({ paymentMethod: 'Cash', numberOfGuests: 1, paidAmount: 0 });
+  const [walkInSaving, setWalkInSaving] = useState(false);
+  const [walkInError, setWalkInError] = useState('');
 
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -167,11 +172,49 @@ const ReservationsPage: React.FC = () => {
     setShowModal(true);
   };
 
+  const handleWalkIn = async () => {
+    if (!walkInForm.roomId || !walkInForm.checkOutDate || !walkInForm.guestName || !walkInForm.guestPhone || !walkInForm.guestIdNumber) {
+      setWalkInError('Oda, çıkış tarihi ve misafir bilgileri zorunludur.'); return;
+    }
+    setWalkInSaving(true); setWalkInError('');
+    try {
+      await hotelService.walkIn(walkInForm as WalkInPayload);
+      setShowWalkIn(false);
+      setWalkInForm({ paymentMethod: 'Cash', numberOfGuests: 1, paidAmount: 0 });
+      window.location.reload();
+    } catch (e: any) {
+      setWalkInError(e?.response?.data?.message || 'Walk-in işlemi başarısız.');
+    } finally { setWalkInSaving(false); }
+  };
+
   const handleStatusChange = async (reservationId: string, newStatus: ReservationStatus) => {
-    if (newStatus === 'checked-in') {
+    if (newStatus === 'confirmed') {
+      await confirmReservation(reservationId);
+    } else if (newStatus === 'checked-in') {
       await checkInReservation(reservationId);
     } else if (newStatus === 'checked-out') {
+      // Check for unpaid POS charges before checkout
+      try {
+        const chargesRes = await hotelService.getRoomCharges(reservationId);
+        const pendingCharges = chargesRes.data.charges.filter(c => c.status === 'Pending');
+        if (pendingCharges.length > 0) {
+          const totalPending = pendingCharges.reduce((s, c) => s + c.amount, 0);
+          const confirmed = window.confirm(
+            `⚠️ Ödenmemiş POS Satışı Uyarısı\n\n` +
+            `${pendingCharges.length} adet bekleyen POS satışı bulunuyor.\n` +
+            `Toplam: ${totalPending.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}\n\n` +
+            `Çıkışa devam etmek istiyor musunuz?\n` +
+            `(Evet: bekleyen satışlar iptal edilmeden çıkış yapılır)`
+          );
+          if (!confirmed) return;
+        }
+      } catch {
+        // If charges fetch fails, proceed with checkout anyway
+      }
       await checkOutReservation(reservationId);
+    } else if (newStatus === 'cancelled') {
+      const reason = window.prompt('İptal nedeni (opsiyonel):');
+      await cancelReservation(reservationId, reason || undefined);
     } else {
       updateReservation(reservationId, { status: newStatus });
     }
@@ -205,14 +248,19 @@ const ReservationsPage: React.FC = () => {
             Toplam {reservations.length} rezervasyon
           </p>
         </div>
-        <button onClick={openAddModal} className="btn btn-primary">
-          <Plus size={20} /> Yeni Rezervasyon
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button onClick={() => { setShowWalkIn(true); setWalkInError(''); }} className="btn" style={{ background: '#059669', color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <UserPlus size={18} /> Walk-in
+          </button>
+          <button onClick={openAddModal} className="btn btn-primary">
+            <Plus size={20} /> Yeni Rezervasyon
+          </button>
+        </div>
       </div>
 
       <div className="card" style={{ marginBottom: '1.5rem' }}>
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-          {(['all', 'pending', 'confirmed', 'checked-in', 'checked-out'] as const).map(f => (
+          {(['all', 'pending', 'confirmed', 'checked-in', 'checked-out', 'cancelled'] as const).map(f => (
             <button
               key={f}
               onClick={() => setFilter(f)}
@@ -748,6 +796,77 @@ const ReservationsPage: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Walk-in Modal */}
+      {showWalkIn && (
+        <div className="modal-overlay" onClick={() => setShowWalkIn(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '520px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ margin: 0 }}>Walk-in Check-in</h3>
+              <button onClick={() => setShowWalkIn(false)} className="btn btn-secondary" style={{ padding: '0.25rem 0.5rem' }}>✕</button>
+            </div>
+            {walkInError && <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', color: '#dc2626', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.875rem' }}>{walkInError}</div>}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={{ display: 'block', fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem' }}>Oda *</label>
+                <select value={walkInForm.roomId ?? ''} onChange={e => setWalkInForm(f => ({ ...f, roomId: e.target.value }))}
+                  style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '0.875rem' }}>
+                  <option value="">Oda seç...</option>
+                  {rooms.filter(r => r.status === 'available').map(r => (
+                    <option key={r.id} value={r.id}>Oda {r.number} — {r.type} ({r.price}₺/gece)</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem' }}>Çıkış Tarihi *</label>
+                <input type="date" value={walkInForm.checkOutDate ?? ''} onChange={e => setWalkInForm(f => ({ ...f, checkOutDate: e.target.value }))}
+                  style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '0.875rem' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem' }}>Misafir Sayısı</label>
+                <input type="number" min={1} value={walkInForm.numberOfGuests ?? 1} onChange={e => setWalkInForm(f => ({ ...f, numberOfGuests: Number(e.target.value) }))}
+                  style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '0.875rem' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem' }}>Ad Soyad *</label>
+                <input type="text" value={walkInForm.guestName ?? ''} onChange={e => setWalkInForm(f => ({ ...f, guestName: e.target.value }))}
+                  placeholder="Misafir adı..." style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '0.875rem' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem' }}>Telefon *</label>
+                <input type="text" value={walkInForm.guestPhone ?? ''} onChange={e => setWalkInForm(f => ({ ...f, guestPhone: e.target.value }))}
+                  placeholder="+90 555..." style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '0.875rem' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem' }}>TCKN / Pasaport *</label>
+                <input type="text" value={walkInForm.guestIdNumber ?? ''} onChange={e => setWalkInForm(f => ({ ...f, guestIdNumber: e.target.value }))}
+                  placeholder="TC Kimlik No..." style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '0.875rem' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem' }}>Ödeme Tutarı (₺)</label>
+                <input type="number" min={0} value={walkInForm.paidAmount ?? 0} onChange={e => setWalkInForm(f => ({ ...f, paidAmount: Number(e.target.value) }))}
+                  style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '0.875rem' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem' }}>Ödeme Yöntemi</label>
+                <select value={walkInForm.paymentMethod ?? 'Cash'} onChange={e => setWalkInForm(f => ({ ...f, paymentMethod: e.target.value }))}
+                  style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '0.875rem' }}>
+                  <option value="Cash">Nakit</option>
+                  <option value="CreditCard">Kredi Kartı</option>
+                  <option value="DebitCard">Banka Kartı</option>
+                </select>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.5rem', justifyContent: 'flex-end' }}>
+              <button onClick={() => setShowWalkIn(false)} className="btn btn-secondary">İptal</button>
+              <button onClick={handleWalkIn} disabled={walkInSaving}
+                className="btn" style={{ background: '#059669', color: 'white' }}>
+                {walkInSaving ? 'İşleniyor...' : '✓ Check-in Yap'}
+              </button>
+            </div>
           </div>
         </div>
       )}

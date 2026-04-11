@@ -1,8 +1,7 @@
 using HotelManagement.Business.DTOs;
 using HotelManagement.Business.Interfaces;
-using Microsoft.AspNetCore.Mvc;
-
 using HotelManagement.Business.Validation;
+using Microsoft.AspNetCore.Mvc;
 
 namespace HotelManagement.API.Controllers;
 
@@ -25,6 +24,17 @@ public class ReservationsController : ControllerBase
     public async Task<ActionResult<IEnumerable<ReservationDto>>> GetAll()
     {
         return Ok(await _reservationService.GetAllReservationsAsync());
+    }
+
+    [HttpGet("paged")]
+    public async Task<ActionResult<PagedResultDto<ReservationDto>>> GetPaged(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string? status = null,
+        [FromQuery] string? search = null)
+    {
+        var result = await _reservationService.GetPagedAsync(page, pageSize, status, search);
+        return Ok(result);
     }
 
     [HttpGet("{id}")]
@@ -50,6 +60,24 @@ public class ReservationsController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = reservation.Id }, reservation);
     }
 
+    [HttpPost("{id}/confirm")]
+    public async Task<ActionResult<ReservationDto>> Confirm(Guid id)
+    {
+        try
+        {
+            var result = await _reservationService.ConfirmAsync(id);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     [HttpPost("{id}/checkin")]
     public async Task<ActionResult<ReservationDto>> CheckIn(Guid id)
     {
@@ -69,17 +97,33 @@ public class ReservationsController : ControllerBase
     }
 
     [HttpPost("{id}/checkout")]
-    public async Task<ActionResult<CheckOutResult>> CheckOut(Guid id, [FromQuery] bool force = false)
+    public async Task<ActionResult<CheckOutResult>> CheckOut(Guid id, [FromQuery] bool force = false, [FromQuery] string? reason = null)
     {
         try
         {
-            var result = await _reservationService.CheckOutAsync(id, force);
+            var result = await _reservationService.CheckOutAsync(id, force, reason);
             if (!result.Success && result.RequiresPayment)
             {
-                // Return 402 Payment Required or 400 Bad Request depending on preference
-                // Here using 200 OK with success=false to let frontend handle the UI flow
                 return Ok(result);
             }
+            return Ok(result);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("{id}/cancel")]
+    public async Task<ActionResult<ReservationDto>> Cancel(Guid id, [FromQuery] string? reason = null)
+    {
+        try
+        {
+            var result = await _reservationService.CancelAsync(id, reason);
             return Ok(result);
         }
         catch (KeyNotFoundException)
@@ -106,6 +150,33 @@ public class ReservationsController : ControllerBase
         {
             return NotFound();
         }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("walkin")]
+    public async Task<ActionResult<ReservationDto>> WalkIn([FromBody] WalkInPayload payload)
+    {
+        try
+        {
+            var reservation = await _reservationService.WalkInAsync(payload);
+            var dto = await _reservationService.GetReservationByIdAsync(reservation.Id);
+            return CreatedAtAction(nameof(GetById), new { id = reservation.Id }, dto);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpDelete("{id}")]
@@ -118,6 +189,10 @@ public class ReservationsController : ControllerBase
         catch (KeyNotFoundException)
         {
             return NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
         }
         return NoContent();
     }

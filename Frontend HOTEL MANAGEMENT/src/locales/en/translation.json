@@ -1,0 +1,132 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "rooms": "Rooms",
+    "staff": "Staff",
+    "guests": "Guests",
+    "reservations": "Reservations",
+    "maintenance": "Maintenance",
+    "roomService": "Room Service",
+    "inventory": "Inventory",
+    "search": "Search",
+    "aiAssistant": "AI Assistant",
+    "payments": "Payments",
+    "invoices": "Invoices",
+    "reports": "Reports",
+    "ratePlans": "Rate Plans",
+    "auditLog": "Audit Log",
+    "guestCrm": "Guest CRM",
+    "dynamicPricing": "Dynamic Pricing",
+    "loyalty": "Loyalty Program",
+    "surveys": "Surveys",
+    "pos": "POS Sales",
+    "housekeeping": "Housekeeping"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "search": "Search",
+    "loading": "Loading…",
+    "noData": "No data found.",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "refresh": "Refresh",
+    "status": "Status",
+    "actions": "Actions",
+    "total": "Total",
+    "date": "Date",
+    "notes": "Notes",
+    "logout": "Logout"
+  },
+  "auth": {
+    "login": "Login",
+    "username": "Username",
+    "password": "Password",
+    "loginError": "Invalid username or password."
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "totalRooms": "Total Rooms",
+    "occupied": "Occupied",
+    "available": "Available",
+    "todayCheckIns": "Today Check-ins",
+    "todayCheckOuts": "Today Check-outs",
+    "revenue": "Revenue"
+  },
+  "rooms": {
+    "title": "Rooms",
+    "number": "No",
+    "type": "Type",
+    "floor": "Floor",
+    "capacity": "Capacity",
+    "price": "Price",
+    "status": {
+      "available": "Available",
+      "occupied": "Occupied",
+      "cleaning": "Cleaning",
+      "maintenance": "Maintenance",
+      "reserved": "Reserved"
+    }
+  },
+  "reservations": {
+    "title": "Reservations",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "guest": "Guest",
+    "room": "Room",
+    "status": {
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "checkedIn": "Checked In",
+      "checkedOut": "Checked Out",
+      "cancelled": "Cancelled"
+    }
+  },
+  "housekeeping": {
+    "title": "Housekeeping",
+    "newTask": "New Task",
+    "taskType": "Task Type",
+    "priority": "Priority",
+    "assignedTo": "Assigned To",
+    "scheduledDate": "Date",
+    "types": {
+      "DailyClean": "Daily Clean",
+      "DeepClean": "Deep Clean",
+      "TurnDown": "Turn Down",
+      "LinenChange": "Linen Change",
+      "CheckoutClean": "Checkout Clean"
+    },
+    "statuses": {
+      "Pending": "Pending",
+      "InProgress": "In Progress",
+      "Completed": "Completed",
+      "Skipped": "Skipped"
+    }
+  },
+  "pos": {
+    "title": "POS – Sales & Room Charges",
+    "newSale": "New Sale",
+    "description": "Description",
+    "amount": "Amount",
+    "category": "Category",
+    "chargeToRoom": "Charge to Room",
+    "categories": {
+      "Restaurant": "Restaurant",
+      "Bar": "Bar",
+      "Spa": "Spa",
+      "Minibar": "Minibar",
+      "Laundry": "Laundry",
+      "Other": "Other"
+    },
+    "statuses": {
+      "Pending": "Pending",
+      "ChargedToRoom": "Charged to Room",
+      "Paid": "Paid",
+      "Cancelled": "Cancelled"
+    }
+  }
+}

@@ -1,10 +1,29 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useHotel } from '../context/HotelContext';
-import { DoorOpen, Users, Calendar, Wrench, AlertTriangle } from 'lucide-react';
+import { hotelService } from '../services/hotelService';
+import { HousekeepingSummary } from '../types';
+import { DoorOpen, Users, Calendar, Wrench, AlertTriangle, ShoppingCart, Sparkles } from 'lucide-react';
 import './Dashboard.css';
 
 const Dashboard: React.FC = () => {
   const { rooms, staff, reservations, maintenanceRequests, guests } = useHotel();
+  const [hkSummary, setHkSummary] = useState<HousekeepingSummary | null>(null);
+  const [posTodayTotal, setPosTodayTotal] = useState<number | null>(null);
+
+  useEffect(() => {
+    hotelService.getHousekeepingSummary()
+      .then(r => setHkSummary(r.data))
+      .catch(() => {});
+    hotelService.getPosTransactions()
+      .then(r => {
+        const today = new Date().toDateString();
+        const todayTotal = r.data
+          .filter(t => new Date(t.createdAt).toDateString() === today && t.status !== 'Cancelled')
+          .reduce((sum, t) => sum + t.amount, 0);
+        setPosTodayTotal(todayTotal);
+      })
+      .catch(() => {});
+  }, []);
 
   const availableRooms = rooms.filter(r => r.status === 'available').length;
   const occupiedRooms = rooms.filter(r => r.status === 'occupied').length;
@@ -43,6 +62,20 @@ const Dashboard: React.FC = () => {
       color: pendingMaintenance > 0 ? '#ef4444' : '#6b7280',
       details: maintenanceRequests.length > 0 ? `${pendingMaintenance} Açık` : 'Talep yok',
     },
+    {
+      title: 'Bugün POS Cirosu',
+      value: posTodayTotal !== null ? `${posTodayTotal.toLocaleString('tr-TR')} ₺` : '—',
+      icon: ShoppingCart,
+      color: '#f59e0b',
+      details: 'Restoran & Bar satışları',
+    },
+    {
+      title: 'Temizlik (Bugün)',
+      value: hkSummary !== null ? `${hkSummary.completed}/${hkSummary.total}` : '—',
+      icon: Sparkles,
+      color: '#10b981',
+      details: hkSummary ? `${hkSummary.pending} bekliyor, ${hkSummary.inProgress} devam ediyor` : 'Veri yükleniyor',
+    },
   ];
 
   return (
@@ -65,14 +98,14 @@ const Dashboard: React.FC = () => {
 
       <div className="stats-grid">
         {stats.map((stat, index) => (
-          <div key={index} className="stat-card" style={{ 
+          <div key={index} className="stat-card" style={{
             borderLeft: `4px solid ${stat.color}`,
             transform: 'translateY(0)',
             transition: 'all 0.3s ease',
             cursor: 'default'
           }}
-          onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
-          onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
           >
             <div className="stat-icon" style={{ backgroundColor: `${stat.color}15` }}>
               <stat.icon size={24} style={{ color: stat.color }} />

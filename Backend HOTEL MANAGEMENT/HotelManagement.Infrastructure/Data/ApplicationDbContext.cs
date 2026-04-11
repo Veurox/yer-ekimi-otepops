@@ -19,6 +19,23 @@ public class ApplicationDbContext : DbContext
     public DbSet<MenuItem> MenuItems { get; set; }
     public DbSet<RoomServiceOrder> RoomServiceOrders { get; set; }
     public DbSet<InventoryItem> InventoryItems { get; set; }
+    public DbSet<Payment> Payments { get; set; }
+    public DbSet<Invoice> Invoices { get; set; }
+    public DbSet<InvoiceLineItem> InvoiceLineItems { get; set; }
+    public DbSet<RatePlan> RatePlans { get; set; }
+    public DbSet<RatePlanRoomType> RatePlanRoomTypes { get; set; }
+    public DbSet<AuditLog> AuditLogs { get; set; }
+
+    // Faz 4
+    public DbSet<PosTransaction> PosTransactions { get; set; }
+    public DbSet<HousekeepingTask> HousekeepingTasks { get; set; }
+
+    // Faz 3
+    public DbSet<GuestPreference> GuestPreferences { get; set; }
+    public DbSet<GuestNote> GuestNotes { get; set; }
+    public DbSet<DynamicPricingRule> DynamicPricingRules { get; set; }
+    public DbSet<LoyaltyTransaction> LoyaltyTransactions { get; set; }
+    public DbSet<GuestSurvey> GuestSurveys { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

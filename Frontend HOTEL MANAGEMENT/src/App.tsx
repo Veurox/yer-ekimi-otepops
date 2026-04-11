@@ -19,6 +19,19 @@ import RoomServicePage from './pages/RoomService';
 import InventoryPage from './pages/Inventory';
 import SearchPage from './pages/Search';
 import AIAssistantPage from './pages/AIAssistant';
+import PaymentsPage from './pages/Payments';
+import InvoicesPage from './pages/Invoices';
+import ReportsPage from './pages/Reports';
+import RatePlansPage from './pages/RatePlans';
+import AuditLogPage from './pages/AuditLog';
+import GuestCRMPage from './pages/GuestCRM';
+import DynamicPricingPage from './pages/DynamicPricing';
+import LoyaltyPage from './pages/Loyalty';
+import SurveysPage from './pages/Surveys';
+import POSPage from './pages/POS';
+import HousekeepingPage from './pages/Housekeeping';
+import BookingLayout from './components/BookingLayout';
+import BookingPage from './pages/BookingPage';
 import './index.css';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; path: string }> = ({ children, path }) => {
@@ -78,6 +91,17 @@ const AppRoutes: React.FC = () => {
             <Route path="/inventory" element={<ProtectedRoute path="/inventory"><InventoryPage /></ProtectedRoute>} />
             <Route path="/search" element={<ProtectedRoute path="/search"><SearchPage /></ProtectedRoute>} />
             <Route path="/ai-assistant" element={<ProtectedRoute path="/ai-assistant"><AIAssistantPage /></ProtectedRoute>} />
+            <Route path="/payments" element={<ProtectedRoute path="/payments"><PaymentsPage /></ProtectedRoute>} />
+            <Route path="/invoices" element={<ProtectedRoute path="/invoices"><InvoicesPage /></ProtectedRoute>} />
+            <Route path="/reports" element={<ProtectedRoute path="/reports"><ReportsPage /></ProtectedRoute>} />
+            <Route path="/rate-plans" element={<ProtectedRoute path="/rate-plans"><RatePlansPage /></ProtectedRoute>} />
+            <Route path="/audit-log" element={<ProtectedRoute path="/audit-log"><AuditLogPage /></ProtectedRoute>} />
+            <Route path="/guest-crm" element={<ProtectedRoute path="/guest-crm"><GuestCRMPage /></ProtectedRoute>} />
+            <Route path="/dynamic-pricing" element={<ProtectedRoute path="/dynamic-pricing"><DynamicPricingPage /></ProtectedRoute>} />
+            <Route path="/loyalty" element={<ProtectedRoute path="/loyalty"><LoyaltyPage /></ProtectedRoute>} />
+            <Route path="/surveys" element={<ProtectedRoute path="/surveys"><SurveysPage /></ProtectedRoute>} />
+            <Route path="/pos" element={<ProtectedRoute path="/pos"><POSPage /></ProtectedRoute>} />
+            <Route path="/housekeeping" element={<ProtectedRoute path="/housekeeping"><HousekeepingPage /></ProtectedRoute>} />
             <Route path="*" element={<Navigate to="/" />} />
           </>
         )}
@@ -90,11 +114,16 @@ function App() {
   return (
     <BrowserRouter>
       <ThemeProvider>
-        <AuthProvider>
-          <HotelProvider>
-            <AppRoutes />
-          </HotelProvider>
-        </AuthProvider>
+        <Routes>
+          <Route path="/booking" element={<BookingLayout><BookingPage /></BookingLayout>} />
+          <Route path="/*" element={
+            <AuthProvider>
+              <HotelProvider>
+                <AppRoutes />
+              </HotelProvider>
+            </AuthProvider>
+          } />
+        </Routes>
       </ThemeProvider>
     </BrowserRouter>
   );
